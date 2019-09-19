@@ -1,26 +1,40 @@
 #include <iostream>
-#include <SDL2/SDL.h>
+//#include <SDL2/SDL.h>
+#include <vector>
 
-int main(int argc, char* argv[])
+#include "Memory.h"
+#include "Disassembler.h"
+
+
+int main(int /*argc*/, char* /*argv*/[])
 {
-	SDL_Init(SDL_INIT_VIDEO);
-
-	SDL_Window* window = SDL_CreateWindow(
-		"The window",
-		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-		640, 480,
-		SDL_WINDOW_OPENGL);
-
-	if (!window)
+	CMemory mem;
+	std::vector<std::uint8_t> data;
+	data.reserve(256 * 2);
+	for (std::uint8_t i = 0; i < 255; i++)
 	{
-		std::cerr << "Failed to create window\n";
-		return 1;
+		data.push_back(i);
+		data.push_back(i);
+	}
+	mem.BulkWrite(0, data.begin(), data.end());
+	CDisassembler d(mem);
+
+	for (memptr addr = 0; addr < data.size(); addr += 2)
+	{
+		std::cout << d.DisassembleInstruction(addr) << "\n";
 	}
 
-	SDL_Delay(5000);
+	std::cout << "==================\n";
 
-	SDL_DestroyWindow(window);
+	std::array<uint8_t, 16> readBuffer;
+	mem.BulkRead(0x10, readBuffer.size(), readBuffer.begin());
+	for (int i = 0; i < readBuffer.size(); i += 2)
+	{
+		char buffer[256];
+		sprintf_s(buffer, "%02X %02X\n", readBuffer[i], readBuffer[i + 1]);
+		std::cout << buffer;
+	}
 
-	SDL_Quit();
+
 	return 0;
 }
