@@ -13,6 +13,6 @@ private:
 public:
 	CDisassembler(const CMemory& memory);
 
-	std::string DisassembleInstruction(memptr addr) const;
+	std::string DisassembleInstruction(memptr_t addr) const;
 };
 

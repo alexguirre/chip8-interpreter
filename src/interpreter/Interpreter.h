@@ -1,20 +1,15 @@
 #pragma once
 #include <array>
 #include <cstdint>
+#include <filesystem>
+#include "Memory.h"
 
 struct SContext
 {
 	static constexpr std::size_t NumRegisters = 16;
 
-	union // General purpose registers
-	{
-		struct
-		{
-			std::uint8_t V0, V1, V2, V3, V4, V5, V6, V7,
-						V8, V9, VA, VB, VC, VD, VE, VF;
-		};
-		std::array<std::uint8_t, NumRegisters> V;
-	};
+
+	std::array<std::uint8_t, NumRegisters> V;	// General purpose registers
 	std::uint16_t I;	// The memory address register
 	std::uint16_t PC;	// The program counter
 	std::uint8_t SP;	// The stack pointer
@@ -28,10 +23,26 @@ struct SContext
 
 class CInterpreter
 {
+public:
+	static constexpr memptr_t ProgramStartAddress = 0x200;
+	static constexpr std::size_t MaxROMSize = CMemory::SizeInBytes - ProgramStartAddress;
+
 private:
 	SContext mContext;
+	CMemory mMemory;
 
 public:
+	CInterpreter() = default;
+
+	CInterpreter(CInterpreter&&) = default;
+	CInterpreter& operator=(CInterpreter&&) = default;
+
+	CInterpreter(const CInterpreter&) = delete;
+	CInterpreter& operator=(const CInterpreter&) = delete;
+
 	inline const SContext& Context() const { return mContext; }
+	inline const CMemory& Memory() const { return mMemory; }
+
+	void LoadProgram(const std::filesystem::path& filePath);
 };
 

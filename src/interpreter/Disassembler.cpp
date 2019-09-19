@@ -6,7 +6,7 @@ CDisassembler::CDisassembler(const CMemory& memory)
 {
 }
 
-std::string CDisassembler::DisassembleInstruction(memptr addr) const
+std::string CDisassembler::DisassembleInstruction(memptr_t addr) const
 {
 	const std::uint8_t hi = mMemory.Read(addr);
 	const std::uint8_t lo = mMemory.Read(addr + 1);
