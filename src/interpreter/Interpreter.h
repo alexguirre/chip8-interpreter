@@ -21,6 +21,16 @@ struct SContext
 	void Reset();
 };
 
+using FInstructionHandler = void(*)(SContext& context);
+
+struct SInstruction
+{
+	std::string Name;
+	FInstructionHandler Handler;
+	std::uint16_t Opcode;
+	std::uint16_t OpcodeMask;
+};
+
 class CInterpreter
 {
 public:
@@ -44,5 +54,8 @@ public:
 	inline const CMemory& Memory() const { return mMemory; }
 
 	void LoadProgram(const std::filesystem::path& filePath);
+	const SInstruction& FindInstruction(std::uint16_t opcode);
+
+	static const std::vector<SInstruction> Instructions;
 };
 

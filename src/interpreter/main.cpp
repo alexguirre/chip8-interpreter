@@ -20,5 +20,23 @@ int main(int /*argc*/, char* /*argv*/[])
 		std::cout << buffer;
 	}
 
+	std::cout << "==================================\n";
+
+	for (memptr_t addr = CInterpreter::ProgramStartAddress; addr < 0x360; addr += 2)
+	{
+		std::uint16_t c = (interpreter.Memory().Read(addr) << 8) | interpreter.Memory().Read(addr + 1);
+		const char* s = nullptr;
+		try
+		{
+			s = interpreter.FindInstruction(c).Name.c_str();
+		}
+		catch (const std::exception&)
+		{
+			s = "<<UNK>>";
+		}
+
+		std::cout << std::hex << addr << "\t" << c << "\t" << s << "\n";
+	}
+
 	return 0;
 }
