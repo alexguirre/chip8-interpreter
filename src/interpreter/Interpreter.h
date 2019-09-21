@@ -2,6 +2,7 @@
 #include <array>
 #include <cstdint>
 #include <filesystem>
+#include <chrono>
 #include "Display.h"
 
 struct SContext
@@ -34,6 +35,7 @@ struct SContext
 };
 
 using FInstructionHandler = void(*)(SContext& context);
+using FInstructionToString = std::string(*)(SContext& context);
 
 struct SInstruction
 {
@@ -41,6 +43,7 @@ struct SInstruction
 	FInstructionHandler Handler;
 	std::uint16_t Opcode;
 	std::uint16_t OpcodeMask;
+	FInstructionToString ToString;
 };
 
 class CInterpreter
@@ -49,10 +52,13 @@ public:
 	static constexpr std::uint16_t ProgramStartAddress = 0x200;
 	static constexpr std::size_t FontsetCharByteSize = 5;
 	static const std::array<std::uint8_t, 16 * FontsetCharByteSize> Fontset;
+	static constexpr std::uint64_t ClockHz = 60;
+	static constexpr std::uint64_t ClockRateMs = static_cast<std::uint64_t>((1.0 / ClockHz) * 1000 + 0.5);
 
 private:
 	SContext mContext;
 	std::unique_ptr<CDisplay> mDisplay;
+	std::chrono::high_resolution_clock::time_point mClockPrev;
 
 public:
 	CInterpreter();
@@ -75,5 +81,6 @@ public:
 
 private:
 	void DoCycle();
+	void DoTick();
 };
 
