@@ -2,13 +2,11 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Memory.cpp" />
-    <ClCompile Include="Disassembler.cpp" />
     <ClCompile Include="Interpreter.cpp" />
+    <ClCompile Include="Display.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Memory.h" />
-    <ClInclude Include="Disassembler.h" />
     <ClInclude Include="Interpreter.h" />
+    <ClInclude Include="Display.h" />
   </ItemGroup>
 </Project>
