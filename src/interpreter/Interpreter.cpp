@@ -39,18 +39,14 @@ void CInterpreter::Update()
 {
 	DoCycle();
 
-	if (mContext.PixelBufferDirty)
-	{
-		mDisplay->UpdatePixelBuffer(mContext.PixelBuffer);
-	}
-	mDisplay->Update();
-
 	auto clockNow = std::chrono::high_resolution_clock::now();
 	if (std::chrono::duration_cast<std::chrono::milliseconds>(clockNow - mClockPrev).count() >= ClockRateMs)
 	{
 		DoTick();
 		mClockPrev = clockNow;
 	}
+
+	mDisplay->Update();
 }
 
 void CInterpreter::DoCycle()
@@ -63,7 +59,9 @@ void CInterpreter::DoCycle()
 
 	// execute
 	const SInstruction& instr = FindInstruction(opcode);
+#if _DEBUG
 	std::cout << instr.ToString(c) << "\n";
+#endif
 	instr.Handler(c);
 
 	// move to next instruction
@@ -86,6 +84,11 @@ void CInterpreter::DoTick()
 			std::cout << "BEEEEEEEEEEEEEEEEEEEEEEP\n";
 			std::cout << "========================\n";
 		}
+	}
+
+	if (mContext.PixelBufferDirty)
+	{
+		mDisplay->UpdatePixelBuffer(mContext.PixelBuffer);
 	}
 }
 
@@ -153,13 +156,13 @@ static std::string CLS_ToString(SContext&) { return "CLS"; }
 
 static void RET_Handler(SContext& c)
 {
-	c.PC = c.Stack[--c.SP];
+	c.PC = c.Stack[--c.SP] - 2; // -2 because Update always adds +2
 }
 static std::string RET_ToString(SContext&) { return "RET"; }
 
 static void JP_Handler(SContext& c)
 {
-	c.PC = c.NNN();
+	c.PC = c.NNN() - 2; // -2 because Update always adds +2
 }
 static std::string JP_ToString(SContext& c)
 {
@@ -170,8 +173,8 @@ static std::string JP_ToString(SContext& c)
 
 static void CALL_Handler(SContext& c)
 {
-	c.Stack[c.SP++] = c.PC;
-	c.PC = c.NNN();
+	c.Stack[c.SP++] = c.PC + 2;
+	c.PC = c.NNN() - 2; // -2 because Update always adds +2
 }
 static std::string CALL_ToString(SContext& c)
 {
@@ -257,8 +260,7 @@ static std::string LD_2_ToString(SContext& c)
 
 static void OR_Handler(SContext& c)
 {
-	std::uint8_t& vx = c.V[c.X()];
-	vx = vx | c.V[c.Y()];
+	c.V[c.X()] |= c.V[c.Y()];
 }
 static std::string OR_ToString(SContext& c)
 {
@@ -269,8 +271,7 @@ static std::string OR_ToString(SContext& c)
 
 static void AND_Handler(SContext& c)
 {
-	std::uint8_t& vx = c.V[c.X()];
-	vx = vx & c.V[c.Y()];
+	c.V[c.X()] &= c.V[c.Y()];
 }
 static std::string AND_ToString(SContext& c)
 {
@@ -281,8 +282,7 @@ static std::string AND_ToString(SContext& c)
 
 static void XOR_Handler(SContext& c)
 {
-	std::uint8_t& vx = c.V[c.X()];
-	vx = vx ^ c.V[c.Y()];
+	c.V[c.X()] ^= c.V[c.Y()];
 }
 static std::string XOR_ToString(SContext& c)
 {
@@ -296,7 +296,7 @@ static void ADD_2_Handler(SContext& c)
 	std::uint8_t& vx = c.V[c.X()];
 	std::uint8_t& vy = c.V[c.Y()];
 	c.V[0xF] = static_cast<std::int32_t>(vx) + static_cast<std::int32_t>(vy) > std::numeric_limits<std::uint8_t>::max();
-	vx = vx + vy;
+	vx += vy;
 }
 static std::string ADD_2_ToString(SContext& c)
 {
@@ -310,7 +310,7 @@ static void SUB_Handler(SContext& c)
 	std::uint8_t& vx = c.V[c.X()];
 	std::uint8_t& vy = c.V[c.Y()];
 	c.V[0xF] =  vx > vy;
-	vx = vx - vy;
+	vx -= vy;
 }
 static std::string SUB_ToString(SContext& c)
 {
@@ -349,7 +349,7 @@ static std::string SUBN_ToString(SContext& c)
 static void SHL_Handler(SContext& c)
 {
 	std::uint8_t& vx = c.V[c.X()];
-	c.V[0xF] = vx & 0x80;
+	c.V[0xF] = (vx >> 7) & 1;
 	vx <<= 1;
 }
 static std::string SHL_ToString(SContext& c)
@@ -375,7 +375,7 @@ static std::string SNE_2_ToString(SContext& c)
 
 static void LD_I_Handler(SContext& c)
 {
-	c.I = c.IR & c.NNN();
+	c.I = c.NNN();
 }
 static std::string LD_I_ToString(SContext& c)
 {
@@ -386,7 +386,7 @@ static std::string LD_I_ToString(SContext& c)
 
 static void JP_2_Handler(SContext& c)
 {
-	c.PC = c.NNN() + c.V[0];
+	c.PC = c.NNN() + c.V[0] - 2; // -2 because Update always adds +2
 }
 static std::string JP_2_ToString(SContext& c)
 {
@@ -414,8 +414,8 @@ static std::string RND_ToString(SContext& c)
 
 static void DRW_Handler(SContext& c)
 {
-	std::uint8_t& vx = c.V[c.X()];
-	std::uint8_t& vy = c.V[c.Y()];
+	std::uint8_t vx = c.V[c.X()];
+	std::uint8_t vy = c.V[c.Y()];
 	std::uint8_t n = c.N();
 
 	c.V[0xF] = 0; // collision flag to 0
@@ -425,8 +425,8 @@ static void DRW_Handler(SContext& c)
 
 		for (std::uint8_t bitIndex = 0; bitIndex < 8; bitIndex++)
 		{
-			std::uint8_t bit = (byte >> bitIndex) & 1;
-			std::uint8_t x = (vx + (7 - bitIndex)) % std::get<0>(CDisplay::Resolution);
+			std::uint8_t bit = (byte >> (7 - bitIndex)) & 1;
+			std::uint8_t x = (vx + bitIndex) % std::get<0>(CDisplay::Resolution);
 			std::uint8_t y = (vy + byteIndex) % std::get<1>(CDisplay::Resolution);
 			std::uint8_t& pixel = c.PixelBuffer[x + y * std::get<0>(CDisplay::Resolution)];
 
@@ -439,6 +439,7 @@ static void DRW_Handler(SContext& c)
 			pixel ^= bit;
 		}
 	}
+	c.PixelBufferDirty = true;
 }
 static std::string DRW_ToString(SContext& c)
 {
@@ -518,7 +519,9 @@ static std::string LD_6_ToString(SContext& c)
 
 static void ADD_I_Handler(SContext& c)
 {
-	c.I += c.V[c.X()];
+	std::uint8_t& vx = c.V[c.X()];
+	c.V[0xF] = static_cast<std::int32_t>(vx) + static_cast<std::int32_t>(c.I) > std::numeric_limits<std::uint8_t>::max();
+	c.I += vx;
 }
 static std::string ADD_I_ToString(SContext& c)
 {
@@ -540,7 +543,7 @@ static std::string LD_7_ToString(SContext& c)
 
 static void LD_8_Handler(SContext& c)
 {
-	std::uint8_t& vx = c.V[c.X()];
+	std::uint8_t vx = c.V[c.X()];
 	std::uint8_t ones = vx % 10;
 	std::uint8_t tens = (vx / 10) % 10;
 	std::uint8_t hundreds = (vx / 100) % 10;
@@ -563,6 +566,7 @@ static void LD_9_Handler(SContext& c)
 	{
 		c.Memory[c.I + i] = c.V[i];
 	}
+	c.I += x + 1;
 }
 static std::string LD_9_ToString(SContext& c)
 {
@@ -578,6 +582,7 @@ static void LD_10_Handler(SContext& c)
 	{
 		c.V[i] = c.Memory[c.I + i];
 	}
+	c.I += x + 1;
 }
 static std::string LD_10_ToString(SContext& c)
 {

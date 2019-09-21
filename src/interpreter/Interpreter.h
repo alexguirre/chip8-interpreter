@@ -27,8 +27,8 @@ struct SContext
 	
 	void Reset();
 
-	inline std::uint8_t X() const { return (IR & 0x0F00) >> 12; }
-	inline std::uint8_t Y() const { return (IR & 0x00F0) >> 8; }
+	inline std::uint8_t X() const { return (IR & 0x0F00) >> 8; }
+	inline std::uint8_t Y() const { return (IR & 0x00F0) >> 4; }
 	inline std::uint16_t NNN() const { return (IR & 0x0FFF); }
 	inline std::uint8_t KK() const { return (IR & 0x00FF); }
 	inline std::uint8_t N() const { return (IR & 0x000F); }

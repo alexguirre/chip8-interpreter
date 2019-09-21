@@ -7,7 +7,7 @@ CDisplay::CDisplay()
 	mWindow = SDL_CreateWindow(
 		"chip8-interpreter",
 		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-		640, 480,
+		std::get<0>(Resolution) * 15, std::get<1>(Resolution) * 15,
 		SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
 	);
 
