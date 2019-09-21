@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <chrono>
 #include "Display.h"
+#include "Keyboard.h"
 
 struct SContext
 {
@@ -22,6 +23,7 @@ struct SContext
 	std::array<std::uint8_t, MemorySize> Memory;
 	CDisplay::PixelBuffer PixelBuffer;
 	bool PixelBufferDirty;
+	std::array<bool, CKeyboard::NumberOfKeys> Keyboard;
 
 	SContext();
 	
@@ -58,6 +60,7 @@ public:
 private:
 	SContext mContext;
 	std::unique_ptr<CDisplay> mDisplay;
+	std::unique_ptr<CKeyboard> mKeyboard;
 	std::chrono::high_resolution_clock::time_point mClockPrev;
 
 public:
@@ -71,6 +74,7 @@ public:
 
 	inline const SContext& Context() const { return mContext; }
 	inline const CDisplay& Display() const { return *mDisplay; }
+	inline const CKeyboard& Keyboard() const { return *mKeyboard; }
 
 	void Update();
 

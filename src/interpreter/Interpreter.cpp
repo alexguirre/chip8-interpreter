@@ -31,12 +31,15 @@ void SContext::Reset()
 }
 
 CInterpreter::CInterpreter()
-	: mContext{}, mDisplay{std::make_unique<CDisplay>()}
+	: mContext{}, mDisplay{ std::make_unique<CDisplay>() },
+		mKeyboard{ std::make_unique<CKeyboard>() }
 {
 }
 
 void CInterpreter::Update()
 {
+	mKeyboard->GetState(mContext.Keyboard);
+
 	DoCycle();
 
 	auto clockNow = std::chrono::high_resolution_clock::now();
@@ -448,10 +451,13 @@ static std::string DRW_ToString(SContext& c)
 	return ss.str();
 }
 
-static void SKP_Handler(SContext&)
+static void SKP_Handler(SContext& c)
 {
-	// TODO: SKP, requires keyboard input
-	throw std::runtime_error("Unimplemented");
+	std::uint8_t vx = c.V[c.X()];
+	if (c.Keyboard[vx])
+	{
+		c.PC += 2;
+	}
 }
 static std::string SKP_ToString(SContext& c)
 {
@@ -460,10 +466,13 @@ static std::string SKP_ToString(SContext& c)
 	return ss.str();
 }
 
-static void SKNP_Handler(SContext&)
+static void SKNP_Handler(SContext& c)
 {
-	// TODO: SKNP, requires keyboard input
-	throw std::runtime_error("Unimplemented");
+	std::uint8_t vx = c.V[c.X()];
+	if (!c.Keyboard[vx])
+	{
+		c.PC += 2;
+	}
 }
 static std::string SKNP_ToString(SContext& c)
 {
@@ -483,10 +492,19 @@ static std::string LD_3_ToString(SContext& c)
 	return ss.str();
 }
 
-static void LD_4_Handler(SContext&)
+static void LD_4_Handler(SContext& c)
 {
-	// TODO: LD Vx, K, requires keyboard input
-	throw std::runtime_error("Unimplemented");
+	for (std::uint8_t key = 0; key < c.Keyboard.size(); key++)
+	{
+		if (c.Keyboard[key])
+		{
+			c.V[c.X()] = key;
+			return;
+		}
+	}
+
+	// no key was pressed, move the PC back to execute this instruction again in the next cycle
+	c.PC -= 2;
 }
 static std::string LD_4_ToString(SContext& c)
 {
