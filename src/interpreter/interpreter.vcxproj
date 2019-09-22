@@ -96,6 +96,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Display.cpp" />
+    <ClCompile Include="Instructions.cpp" />
     <ClCompile Include="Interpreter.cpp" />
     <ClCompile Include="Keyboard.cpp" />
     <ClCompile Include="main.cpp" />
@@ -103,6 +104,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Display.h" />
+    <ClInclude Include="Instructions.h" />
     <ClInclude Include="Interpreter.h" />
     <ClInclude Include="Keyboard.h" />
     <ClInclude Include="Sound.h" />

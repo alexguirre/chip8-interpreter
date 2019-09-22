@@ -7,9 +7,10 @@
 class CDisplay
 {
 public:
-	static constexpr std::tuple<std::int32_t, std::int32_t> Resolution{ 64, 32 };
+	static constexpr std::size_t ResolutionWidth{ 64 };
+	static constexpr std::size_t ResolutionHeight{ 32 };
 	
-	using PixelBuffer = std::array<std::uint8_t, (std::get<0>(Resolution) * std::get<1>(Resolution))>;
+	using PixelBuffer = std::array<std::uint8_t, (ResolutionWidth * ResolutionHeight)>;
 
 	using RGBA = std::tuple<std::uint8_t, std::uint8_t, std::uint8_t, std::uint8_t>;
 	static constexpr RGBA PrimaryColor{ std::uint8_t{0}, std::uint8_t{100}, std::uint8_t{0}, std::uint8_t{255} };

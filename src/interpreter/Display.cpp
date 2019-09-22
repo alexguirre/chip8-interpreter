@@ -7,7 +7,7 @@ CDisplay::CDisplay()
 	mWindow = SDL_CreateWindow(
 		"chip8-interpreter",
 		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-		std::get<0>(Resolution) * 15, std::get<1>(Resolution) * 15,
+		ResolutionWidth * 15, ResolutionHeight * 15,
 		SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
 	);
 
@@ -48,22 +48,19 @@ void CDisplay::Update()
 	int w, h;
 	SDL_GetWindowSize(mWindow, &w, &h);
 
-	constexpr std::int32_t resX = std::get<0>(Resolution);
-	constexpr std::int32_t resY = std::get<1>(Resolution);
+	const std::size_t pixelW = w / ResolutionWidth;
+	const std::size_t pixelH = h / ResolutionHeight;
 
-	const std::int32_t pixelW = w / resX;
-	const std::int32_t pixelH = h / resY;
-
-	for (std::int32_t y = 0; y < resY; y++)
+	for (std::size_t y = 0; y < ResolutionHeight; y++)
 	{
-		for (std::int32_t x = 0; x < resX; x++)
+		for (std::size_t x = 0; x < ResolutionWidth; x++)
 		{
 			SDL_Rect pixel{
 				x * pixelW, y * pixelH,
 				pixelW, pixelH
 			};
 
-			RGBA c = (mPixelBuffer[x + y * resX]) ? PrimaryColor : SecondaryColor;
+			RGBA c = (mPixelBuffer[x + y * ResolutionWidth]) ? PrimaryColor : SecondaryColor;
 			SDL_SetRenderDrawColor(mRenderer, 
 				std::get<0>(c), std::get<1>(c), std::get<2>(c), std::get<3>(c));
 			SDL_RenderFillRect(mRenderer, &pixel);

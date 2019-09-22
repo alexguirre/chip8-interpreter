@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <chrono>
+#include "Instructions.h"
 #include "Display.h"
 #include "Keyboard.h"
 #include "Sound.h"
@@ -35,18 +36,6 @@ struct SContext
 	inline std::uint16_t NNN() const { return (IR & 0x0FFF); }
 	inline std::uint8_t KK() const { return (IR & 0x00FF); }
 	inline std::uint8_t N() const { return (IR & 0x000F); }
-};
-
-using FInstructionHandler = void(*)(SContext& context);
-using FInstructionToString = std::string(*)(SContext& context);
-
-struct SInstruction
-{
-	std::string Name;
-	FInstructionHandler Handler;
-	std::uint16_t Opcode;
-	std::uint16_t OpcodeMask;
-	FInstructionToString ToString;
 };
 
 class CInterpreter
@@ -82,8 +71,6 @@ public:
 
 	void LoadProgram(const std::filesystem::path& filePath);
 	const SInstruction& FindInstruction(std::uint16_t opcode);
-
-	static const std::vector<SInstruction> Instructions;
 
 private:
 	void DoCycle();
