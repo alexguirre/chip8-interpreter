@@ -113,6 +113,58 @@ void CInterpreter::LoadProgram(const std::filesystem::path& filePath)
 	mContext.PC = ProgramStartAddress;
 }
 
+void CInterpreter::LoadState(const std::filesystem::path& filePath)
+{
+	if (!fs::is_regular_file(filePath))
+	{
+		throw std::invalid_argument("Path '" + filePath.string() + "' is an invalid file");
+	}
+
+	mContext.Reset();
+
+	std::basic_ifstream<std::uint8_t> file(filePath, std::ios::in | std::ios::binary);
+
+	SContext& c = mContext;
+	file.read(c.V.data(), c.V.size() * sizeof(std::uint8_t));
+	file.read(reinterpret_cast<std::uint8_t*>(&c.I), sizeof(c.I));
+	file.read(reinterpret_cast<std::uint8_t*>(&c.PC), sizeof(c.PC));
+	file.read(&c.SP, sizeof(c.SP));
+	file.read(&c.DT, sizeof(c.DT));
+	file.read(&c.ST, sizeof(c.ST));
+	file.read(reinterpret_cast<std::uint8_t*>(c.Stack.data()), c.Stack.size() * sizeof(std::uint16_t));
+	file.read(c.Memory.data(), c.Memory.size() * sizeof(std::uint8_t));
+	file.read(c.PixelBuffer.data(), c.PixelBuffer.size() * sizeof(std::uint8_t));
+	
+	c.PixelBufferDirty = true;
+}
+
+void CInterpreter::SaveState(const std::filesystem::path& filePath) const
+{
+	if (!filePath.has_filename())
+	{
+		throw std::invalid_argument("Path '" + filePath.string() + "' is not a valid file path");
+	}
+
+	fs::path fullPath = fs::absolute(filePath);
+	if (!fs::exists(fullPath.parent_path()))
+	{
+		throw std::invalid_argument("Parent path '" + fullPath.parent_path().string() + "' does not exist");
+	}
+
+	std::basic_ofstream<std::uint8_t> file(filePath, std::ios::out | std::ios::binary);
+
+	const SContext& c = mContext;
+	file.write(c.V.data(), c.V.size() * sizeof(std::uint8_t));
+	file.write(reinterpret_cast<const std::uint8_t*>(&c.I), sizeof(c.I));
+	file.write(reinterpret_cast<const std::uint8_t*>(&c.PC), sizeof(c.PC));
+	file.write(&c.SP, sizeof(c.SP));
+	file.write(&c.DT, sizeof(c.DT));
+	file.write(&c.ST, sizeof(c.ST));
+	file.write(reinterpret_cast<const std::uint8_t*>(c.Stack.data()), c.Stack.size() * sizeof(std::uint16_t));
+	file.write(c.Memory.data(), c.Memory.size() * sizeof(std::uint8_t));
+	file.write(c.PixelBuffer.data(), c.PixelBuffer.size() * sizeof(std::uint8_t));
+}
+
 const SInstruction& CInterpreter::FindInstruction(std::uint16_t opcode)
 {
 	for (auto& inst : SInstruction::InstructionSet)

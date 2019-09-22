@@ -29,6 +29,14 @@ int main(int argc, char* argv[])
 				{
 					quit = true;
 				}
+				else if (e.type == SDL_KEYDOWN && e.key.keysym.scancode == SDL_SCANCODE_F5)
+				{
+					interpreter.SaveState("save.ch8save");
+				}
+				else if (e.type == SDL_KEYDOWN && e.key.keysym.scancode == SDL_SCANCODE_F8)
+				{
+					interpreter.LoadState("save.ch8save");
+				}
 			}
 
 			interpreter.Update();

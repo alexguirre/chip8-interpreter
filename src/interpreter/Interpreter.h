@@ -70,6 +70,8 @@ public:
 	void Update();
 
 	void LoadProgram(const std::filesystem::path& filePath);
+	void LoadState(const std::filesystem::path& filePath);
+	void SaveState(const std::filesystem::path& filePath) const;
 	const SInstruction& FindInstruction(std::uint16_t opcode);
 
 private:
