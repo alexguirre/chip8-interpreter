@@ -4,7 +4,7 @@
 #include <chrono>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_audio.h>
-
+#include <gsl/span>
 
 class CSound
 {
@@ -28,8 +28,7 @@ public:
 	void Beep(double frequency, std::chrono::milliseconds duration);
 
 private:
-	void GenerateSamples(std::int16_t* stream, std::size_t length);
+	void GenerateSamples(gsl::span<std::int16_t> stream);
 
 	static void SdlCallback(CSound* self, std::uint8_t* stream, std::int32_t len);
 };
-

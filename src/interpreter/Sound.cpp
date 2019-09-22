@@ -44,24 +44,20 @@ void CSound::Beep(double frequency, std::chrono::milliseconds duration)
 	SDL_UnlockAudio();
 }
 
-void CSound::GenerateSamples(std::int16_t* stream, std::size_t length)
+void CSound::GenerateSamples(gsl::span<std::int16_t> stream)
 {
-	std::size_t i = 0;
-	while (i < length)
+	std::ptrdiff_t i = 0;
+	while (i < stream.size())
 	{
 		if (mBeeps.empty())
 		{
-			while (i < length)
-			{
-				stream[i] = 0;
-				i++;
-			}
+			std::fill(stream.begin(), stream.end(), std::int16_t{ 0 });
 			return;
 		}
 
 		SBeep& b = mBeeps.front();
 		
-		std::uint32_t samplesToDo = static_cast<std::uint32_t>(std::min(i + b.SamplesLeft, length));
+		std::uint32_t samplesToDo = static_cast<std::uint32_t>(std::min(i + b.SamplesLeft, stream.size()));
 		b.SamplesLeft -= samplesToDo - static_cast<std::uint32_t>(i);
 
 		while (i < samplesToDo)
@@ -83,7 +79,6 @@ void CSound::GenerateSamples(std::int16_t* stream, std::size_t length)
 void CSound::SdlCallback(CSound* self, std::uint8_t* stream, std::int32_t len)
 {
 	self->GenerateSamples(
-		reinterpret_cast<std::int16_t*>(stream),
-		len / 2
+		{ reinterpret_cast<std::int16_t*>(stream), len / 2 }
 	);
 }
