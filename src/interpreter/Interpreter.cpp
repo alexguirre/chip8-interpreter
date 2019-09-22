@@ -32,7 +32,7 @@ void SContext::Reset()
 
 CInterpreter::CInterpreter()
 	: mContext{}, mDisplay{ std::make_unique<CDisplay>() },
-		mKeyboard{ std::make_unique<CKeyboard>() }
+		mKeyboard{ std::make_unique<CKeyboard>() }, mSound{ std::make_unique<CSound>() }
 {
 }
 
@@ -83,9 +83,8 @@ void CInterpreter::DoTick()
 		mContext.ST--;
 		if (mContext.ST == 0)
 		{
-			std::cout << "========================\n";
-			std::cout << "BEEEEEEEEEEEEEEEEEEEEEEP\n";
-			std::cout << "========================\n";
+			using namespace std::chrono_literals;
+			mSound->Beep(550, 50ms);
 		}
 	}
 

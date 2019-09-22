@@ -5,6 +5,7 @@
 #include <chrono>
 #include "Display.h"
 #include "Keyboard.h"
+#include "Sound.h"
 
 struct SContext
 {
@@ -61,6 +62,7 @@ private:
 	SContext mContext;
 	std::unique_ptr<CDisplay> mDisplay;
 	std::unique_ptr<CKeyboard> mKeyboard;
+	std::unique_ptr<CSound> mSound;
 	std::chrono::high_resolution_clock::time_point mClockPrev;
 
 public:

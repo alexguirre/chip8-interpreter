@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
 
 	cmd.parse(argc, argv);
 
-	SDL_Init(SDL_INIT_VIDEO);
+	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
 
 	try
 	{
