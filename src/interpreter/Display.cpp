@@ -48,12 +48,12 @@ void CDisplay::Update()
 	int w, h;
 	SDL_GetWindowSize(mWindow, &w, &h);
 
-	const std::size_t pixelW = w / ResolutionWidth;
-	const std::size_t pixelH = h / ResolutionHeight;
+	const std::int32_t pixelW = w / ResolutionWidth;
+	const std::int32_t pixelH = h / ResolutionHeight;
 
-	for (std::size_t y = 0; y < ResolutionHeight; y++)
+	for (std::int32_t y = 0; y < ResolutionHeight; y++)
 	{
-		for (std::size_t x = 0; x < ResolutionWidth; x++)
+		for (std::int32_t x = 0; x < ResolutionWidth; x++)
 		{
 			SDL_Rect pixel{
 				x * pixelW, y * pixelH,
