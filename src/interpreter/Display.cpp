@@ -13,7 +13,7 @@ CDisplay::CDisplay()
 
 	if (!mWindow)
 	{
-		throw std::runtime_error("Failed to created window: " + std::string(SDL_GetError()));
+		throw std::runtime_error("Failed to create window: " + std::string(SDL_GetError()));
 	}
 
 	mRenderer = SDL_CreateRenderer(
@@ -23,7 +23,7 @@ CDisplay::CDisplay()
 
 	if (!mRenderer)
 	{
-		throw std::runtime_error("Failed to created renderer: " + std::string(SDL_GetError()));
+		throw std::runtime_error("Failed to create renderer: " + std::string(SDL_GetError()));
 	}
 }
 
