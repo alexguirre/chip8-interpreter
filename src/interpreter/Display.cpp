@@ -63,7 +63,7 @@ void CDisplay::Update()
 				pixelW, pixelH
 			};
 
-			Color c = (mPixelBuffer[x + y * resX]) ? PrimaryColor : SecondaryColor;
+			RGBA c = (mPixelBuffer[x + y * resX]) ? PrimaryColor : SecondaryColor;
 			SDL_SetRenderDrawColor(mRenderer, 
 				std::get<0>(c), std::get<1>(c), std::get<2>(c), std::get<3>(c));
 			SDL_RenderFillRect(mRenderer, &pixel);
