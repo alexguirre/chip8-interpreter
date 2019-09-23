@@ -39,9 +39,9 @@ CSound::~CSound()
 
 void CSound::Beep(double frequency, std::chrono::milliseconds duration)
 {
-	SDL_LockAudio();
+	SDL_LockAudioDevice(mDeviceID);
 	mBeeps.push({ frequency, static_cast<std::uint32_t>(duration.count() * Frequency / 1000) });
-	SDL_UnlockAudio();
+	SDL_UnlockAudioDevice(mDeviceID);
 }
 
 void CSound::GenerateSamples(gsl::span<std::int16_t> stream)
