@@ -4,6 +4,8 @@
 #include <gsl/gsl_util>
 #include "Interpreter.h"
 
+#include "ImGuiWindow.h"
+
 int main(int argc, char* argv[])
 {
 	TCLAP::CmdLine cmd("Chip-8 interpreter", ' ', "WIP");
@@ -20,7 +22,9 @@ int main(int argc, char* argv[])
 	{
 		CInterpreter interpreter;
 		interpreter.LoadProgram(inputArg.getValue());
-	
+
+		CImGuiWindow window, window2;
+
 		bool quit = false;
 		while (!quit)
 		{
@@ -33,15 +37,21 @@ int main(int argc, char* argv[])
 				}
 				else if (e.type == SDL_KEYDOWN && e.key.keysym.scancode == SDL_SCANCODE_F5)
 				{
-					interpreter.SaveState("save.ch8save");
+					//interpreter.SaveState("save.ch8save");
 				}
 				else if (e.type == SDL_KEYDOWN && e.key.keysym.scancode == SDL_SCANCODE_F8)
 				{
-					interpreter.LoadState("save.ch8save");
+					//interpreter.LoadState("save.ch8save");
 				}
+
+				window.ProcessEvent(e);
+				window2.ProcessEvent(e);
 			}
 
-			interpreter.Update();
+			window.Render();
+			window2.Render();
+
+			//interpreter.Update();
 		}
 	}
 	catch (const std::exception& e)

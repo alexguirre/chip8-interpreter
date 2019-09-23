@@ -7,6 +7,7 @@
     <ClCompile Include="Keyboard.cpp" />
     <ClCompile Include="Sound.cpp" />
     <ClCompile Include="Instructions.cpp" />
+    <ClCompile Include="ImGuiWindow.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Interpreter.h" />
@@ -14,5 +15,6 @@
     <ClInclude Include="Keyboard.h" />
     <ClInclude Include="Sound.h" />
     <ClInclude Include="Instructions.h" />
+    <ClInclude Include="ImGuiWindow.h" />
   </ItemGroup>
 </Project>
