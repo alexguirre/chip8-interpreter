@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <tclap/CmdLine.h>
+#include <gsl/gsl_util>
 #include "Interpreter.h"
 
 int main(int argc, char* argv[])
@@ -13,6 +14,7 @@ int main(int argc, char* argv[])
 	cmd.parse(argc, argv);
 
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
+	auto sdlQuit = gsl::finally(&SDL_Quit);
 
 	try
 	{
@@ -46,8 +48,6 @@ int main(int argc, char* argv[])
 	{
 		std::cerr << e.what() << std::endl;
 	}
-
-	SDL_Quit();
 
 	return 0;
 }
