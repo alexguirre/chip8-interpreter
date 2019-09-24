@@ -7,6 +7,8 @@
 #include <gsl/gsl_util>
 #include <GL/gl3w.h>
 #include <imgui.h>
+#include "Resources.h"
+#include "Icons.h"
 
 // TODO: clean up CImGuiWindow to make coding conventions similar to the rest of the project
 // For now, mostly copied from ImGui's SDL2+OpenGL3 example
@@ -76,6 +78,15 @@ public:
 		IMGUI_CHECKVERSION();
 		ImContext = ImGui::CreateContext();
 		ImGui::StyleColorsDark();
+
+		ImGuiIO& io = ImGui::GetIO();
+		io.Fonts->AddFontDefault();
+		ImFontConfig iconFontConfig;
+		iconFontConfig.MergeMode = true;
+		iconFontConfig.GlyphMinAdvanceX = 13.0f;
+		iconFontConfig.PixelSnapH = true;
+		static const ImWchar iconFontRange[]{ ICON_MIN_FA, ICON_MAX_FA, 0 };
+		io.Fonts->AddFontFromMemoryCompressedTTF(CResources::FontAwesomeCompressedTTF.data(), static_cast<int>(CResources::FontAwesomeCompressedTTF.size()), 13.0f, &iconFontConfig, iconFontRange);
 
 		InitSdl();
 		InitOpenGL();
