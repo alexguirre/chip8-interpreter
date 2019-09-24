@@ -5,6 +5,16 @@
 #include "Interpreter.h"
 
 #include "ImGuiWindow.h"
+#include <imgui.h>
+
+class CImGuiDemoWindow : public CImGuiWindow
+{
+public:
+	void Draw() override
+	{
+		ImGui::ShowDemoWindow();
+	}
+};
 
 int main(int argc, char* argv[])
 {
@@ -23,7 +33,7 @@ int main(int argc, char* argv[])
 		CInterpreter interpreter;
 		interpreter.LoadProgram(inputArg.getValue());
 
-		CImGuiWindow window, window2;
+		CImGuiDemoWindow window, window2;
 
 		bool quit = false;
 		while (!quit)
