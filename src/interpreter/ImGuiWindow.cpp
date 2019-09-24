@@ -15,7 +15,7 @@
 CImGuiWindow::CImGuiWindow()
 {
 	mWindow = SDL_CreateWindow(
-		"chip8-interpreter",
+		"chip8-interpreter: ImGui",
 		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 		1280, 720,
 		SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
