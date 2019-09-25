@@ -5,10 +5,10 @@
 
 static const ImVec4 SubtitleColor{ 0.1f, 0.8f, 0.05f, 1.0f };
 
-// TODO: debugger breakpoints
+// TODO: functional debugger breakpoints
 
 CInterpreterDebugger::CInterpreterDebugger(CInterpreter& interpreter)
-	: CImGuiWindow("chip8-interpreter: Debugger"),	mInterpreter(interpreter), mFirstDraw{ true }
+	: CImGuiWindow("chip8-interpreter: Debugger"), mInterpreter(interpreter), mFirstDraw{ true }, mBreakpoints{}
 {
 }
 
@@ -227,6 +227,14 @@ void CInterpreterDebugger::DrawDisassembly()
 		ImGui::Separator();
 		if (ImGui::BeginChild("DisassemblyLines", ImVec2(0.0f, 0.0f), false))
 		{
+			constexpr float LeftGapWidth = 20.0f;
+
+			// left gap background
+			{
+				ImVec2 pos = ImGui::GetCursorScreenPos();
+				ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(pos.x, 0.0f), ImVec2(pos.x + LeftGapWidth, std::numeric_limits<float>::max()), IM_COL32(50, 50, 50, 180));
+			}
+
 			constexpr std::int32_t BytesPerLine{ 2 };
 			constexpr std::int32_t LineTotalCount{ SContext::MemorySize / BytesPerLine };
 			ImGuiListClipper clipper(LineTotalCount);
@@ -234,14 +242,39 @@ void CInterpreterDebugger::DrawDisassembly()
 			{
 				for (std::size_t i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
 				{
+					ImGui::PushID(static_cast<int>(i));
+
 					std::size_t addr = i * BytesPerLine;
 
-					// highlight background if we're at the current instruction
+					// highlight background if the breakpoint is set
+					if (mBreakpoints[i])
+					{
+						// text background
+						ImVec2 pos = ImGui::GetCursorScreenPos();
+						ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(pos.x + LeftGapWidth, pos.y), ImVec2(std::numeric_limits<float>::max(), pos.y + ImGui::GetTextLineHeight()), IM_COL32(200, 0, 0, 100));
+
+						// circle icon
+						const ImVec2 circleCenter{ pos.x + (LeftGapWidth * 0.5f), pos.y + ImGui::GetTextLineHeight() * 0.5f };
+						const float circleRadius = ImGui::GetTextLineHeight() * 0.5f;
+						ImGui::GetWindowDrawList()->AddCircleFilled(circleCenter, circleRadius, IM_COL32(240, 0, 0, 255));
+						ImGui::GetWindowDrawList()->AddCircle(circleCenter, circleRadius, IM_COL32(255, 255, 255, 255));
+					}
+
+					// executing instruction indicator
 					if (c.PC == addr)
 					{
-						ImVec2 pos = ImGui::GetCursorScreenPos();
-						ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(0.0f, pos.y), ImVec2(std::numeric_limits<float>::max(), pos.y + ImGui::GetTextLineHeight()), IM_COL32(200, 0, 0, 100));
+						ImVec2 prevCursor = ImGui::GetCursorPos();
+						ImGui::SetCursorPos(ImVec2(prevCursor.x + LeftGapWidth * 0.25f, prevCursor.y));
+						ImGui::TextColored(ImVec4(1.0f, 0.85f, 0.0f, 1.0f), ICON_FA_ANGLE_RIGHT);
+						ImGui::SetCursorPos(prevCursor);
 					}
+
+					// breakpoint button
+					if (ImGui::InvisibleButton("##breakpointButton", ImVec2(LeftGapWidth, ImGui::GetTextLineHeight())))
+					{
+						mBreakpoints[i] = !mBreakpoints[i];
+					}
+					ImGui::SameLine();
 
 					if (addr >= CInterpreter::ProgramStartAddress)
 					{
@@ -267,6 +300,8 @@ void CInterpreterDebugger::DrawDisassembly()
 					{
 						ImGui::TextDisabled("???");
 					}
+
+					ImGui::PopID();
 				}
 			}
 		}
