@@ -21,4 +21,5 @@ private:
 	void DrawStack();
 	void DrawMemory();
 	void DrawDisassembly();
+	void CheckBreakpoints();
 };

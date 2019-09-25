@@ -21,6 +21,7 @@ int main(int argc, char* argv[])
 	{
 		CInterpreter interpreter;
 		interpreter.LoadProgram(inputArg.getValue());
+		interpreter.Pause(true);
 
 		CInterpreterDebugger debugger{ interpreter };
 

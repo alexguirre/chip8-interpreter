@@ -5,8 +5,6 @@
 
 static const ImVec4 SubtitleColor{ 0.1f, 0.8f, 0.05f, 1.0f };
 
-// TODO: functional debugger breakpoints
-
 CInterpreterDebugger::CInterpreterDebugger(CInterpreter& interpreter)
 	: CImGuiWindow("chip8-interpreter: Debugger"), mInterpreter(interpreter), mFirstDraw{ true }, mBreakpoints{}
 {
@@ -14,6 +12,8 @@ CInterpreterDebugger::CInterpreterDebugger(CInterpreter& interpreter)
 
 void CInterpreterDebugger::Draw()
 {
+	CheckBreakpoints();
+
 	ImGuiIO& io = ImGui::GetIO();
 	
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
@@ -308,4 +308,18 @@ void CInterpreterDebugger::DrawDisassembly()
 		ImGui::EndChild();
 	}
 	ImGui::EndChild();
+}
+
+void CInterpreterDebugger::CheckBreakpoints()
+{
+	if (mInterpreter.IsPaused())
+	{
+		return;
+	}
+
+	const std::size_t breakpointIndex = mInterpreter.Context().PC / 2;
+	if (mBreakpoints[breakpointIndex])
+	{
+		mInterpreter.Pause(true);
+	}
 }
