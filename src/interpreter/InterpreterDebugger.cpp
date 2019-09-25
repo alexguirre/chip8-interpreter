@@ -8,7 +8,7 @@ static const ImVec4 SubtitleColor{ 0.1f, 0.8f, 0.05f, 1.0f };
 // TODO: debugger breakpoints
 
 CInterpreterDebugger::CInterpreterDebugger(const CInterpreter& interpreter)
-	: CImGuiWindow("chip8-interpreter: Debugger"),	mInterpreter(interpreter)
+	: CImGuiWindow("chip8-interpreter: Debugger"),	mInterpreter(interpreter), mFirstDraw{ true }
 {
 }
 
@@ -34,6 +34,11 @@ void CInterpreterDebugger::Draw()
 	ImGui::End();
 
 	ImGui::PopStyleVar();
+
+	if (mFirstDraw)
+	{
+		mFirstDraw = false;
+	}
 }
 
 void CInterpreterDebugger::DrawMenuBar()
@@ -149,12 +154,11 @@ void CInterpreterDebugger::DrawMemory()
 		{
 			ImGui::Columns(3);
 
-			static std::once_flag onceSetInitialColumnWidth;
-			std::call_once(onceSetInitialColumnWidth, []()
-				{
-					ImGui::SetColumnWidth(0, 70.0f);
-					ImGui::SetColumnWidth(1, 200.0f);
-				});
+			if (mFirstDraw)
+			{
+				ImGui::SetColumnWidth(0, 70.0f);
+				ImGui::SetColumnWidth(1, 200.0f);
+			}
 			ImGui::Text("Address"); ImGui::NextColumn();
 			ImGui::NextColumn();
 			ImGui::NextColumn();
@@ -221,7 +225,6 @@ void CInterpreterDebugger::DrawDisassembly()
 		ImGui::Separator();
 		if (ImGui::BeginChild("DisassemblyLines", ImVec2(0.0f, 0.0f), false))
 		{
-
 			constexpr std::int32_t BytesPerLine{ 2 };
 			constexpr std::int32_t LineTotalCount{ SContext::MemorySize / BytesPerLine };
 			ImGuiListClipper clipper(LineTotalCount);

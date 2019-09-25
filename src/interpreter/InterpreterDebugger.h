@@ -6,6 +6,7 @@ class CInterpreterDebugger : public CImGuiWindow
 {
 private:
 	const CInterpreter& mInterpreter;
+	bool mFirstDraw;
 
 public:
 	CInterpreterDebugger(const CInterpreter& interpreter);
