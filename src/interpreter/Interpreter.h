@@ -55,6 +55,7 @@ private:
 	std::unique_ptr<CKeyboard> mKeyboard;
 	std::unique_ptr<CSound> mSound;
 	std::chrono::high_resolution_clock::time_point mClockPrev;
+	bool mPaused;
 
 public:
 	CInterpreter();
@@ -68,8 +69,12 @@ public:
 	inline const SContext& Context() const { return mContext; }
 	inline const CDisplay& Display() const { return *mDisplay; }
 	inline const CKeyboard& Keyboard() const { return *mKeyboard; }
+	inline const CSound& Sound() const { return *mSound; }
+	inline bool IsPaused() const { return mPaused; }
 
+	void Pause(bool pause);
 	void Update();
+	void Step();
 
 	void LoadProgram(const std::filesystem::path& filePath);
 	void LoadState(const std::filesystem::path& filePath);

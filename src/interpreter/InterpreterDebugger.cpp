@@ -7,7 +7,7 @@ static const ImVec4 SubtitleColor{ 0.1f, 0.8f, 0.05f, 1.0f };
 
 // TODO: debugger breakpoints
 
-CInterpreterDebugger::CInterpreterDebugger(const CInterpreter& interpreter)
+CInterpreterDebugger::CInterpreterDebugger(CInterpreter& interpreter)
 	: CImGuiWindow("chip8-interpreter: Debugger"),	mInterpreter(interpreter), mFirstDraw{ true }
 {
 }
@@ -45,25 +45,27 @@ void CInterpreterDebugger::DrawMenuBar()
 {
 	if (ImGui::BeginMenuBar())
 	{
-		//TODO: debuggger break/continue/step functionality
-		if (ImGui::MenuItem(ICON_FA_PLAY" Continue", nullptr, false, false))
+		if (ImGui::MenuItem(ICON_FA_PLAY" Continue", nullptr, false, mInterpreter.IsPaused()))
 		{
+			mInterpreter.Pause(false);
 		}
 		if (ImGui::IsItemHovered())
 		{
 			ImGui::SetTooltip("Continue");
 		}
 
-		if (ImGui::MenuItem(ICON_FA_PAUSE, nullptr, false, true))
+		if (ImGui::MenuItem(ICON_FA_PAUSE, nullptr, false, !mInterpreter.IsPaused()))
 		{
+			mInterpreter.Pause(true);
 		}
 		if (ImGui::IsItemHovered())
 		{
 			ImGui::SetTooltip("Break");
 		}
 
-		if (ImGui::MenuItem(ICON_FA_ARROW_RIGHT, nullptr, false, false))
+		if (ImGui::MenuItem(ICON_FA_ARROW_RIGHT, nullptr, false, mInterpreter.IsPaused()))
 		{
+			mInterpreter.Step();
 		}
 		if (ImGui::IsItemHovered())
 		{

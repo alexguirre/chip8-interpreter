@@ -5,11 +5,11 @@
 class CInterpreterDebugger : public CImGuiWindow
 {
 private:
-	const CInterpreter& mInterpreter;
+	CInterpreter& mInterpreter;
 	bool mFirstDraw;
 
 public:
-	CInterpreterDebugger(const CInterpreter& interpreter);
+	CInterpreterDebugger(CInterpreter& interpreter);
 
 	void Draw() override;
 

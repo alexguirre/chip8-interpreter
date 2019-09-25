@@ -37,7 +37,22 @@ CInterpreter::CInterpreter()
 {
 }
 
+void CInterpreter::Pause(bool pause)
+{
+	mPaused = pause;
+}
+
 void CInterpreter::Update()
+{
+	if (!IsPaused())
+	{
+		Step();
+	}
+
+	mDisplay->Update();
+}
+
+void CInterpreter::Step()
 {
 	mKeyboard->GetState(mContext.Keyboard);
 
@@ -49,8 +64,6 @@ void CInterpreter::Update()
 		DoTick();
 		mClockPrev = clockNow;
 	}
-
-	mDisplay->Update();
 }
 
 void CInterpreter::DoCycle()
