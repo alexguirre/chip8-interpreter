@@ -40,7 +40,7 @@ private:
 	GLuint FontTexture = 0;
 
 public:
-	Impl()
+	Impl(const std::string& title)
 	{
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -51,7 +51,7 @@ public:
 		SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
 		Window = SDL_CreateWindow(
-			"chip8-interpreter: ImGui",
+			title.c_str(),
 			SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 			1280, 720,
 			SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
@@ -690,8 +690,8 @@ private:
 	inline static std::array<SDL_Cursor*, ImGuiMouseCursor_COUNT> Cursors{};
 };
 
-CImGuiWindow::CImGuiWindow()
-	: mImpl{ std::make_unique<Impl>() }
+CImGuiWindow::CImGuiWindow(const std::string& title)
+	: mImpl{ std::make_unique<Impl>(title) }
 {
 }
 

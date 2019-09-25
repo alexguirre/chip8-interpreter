@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -99,6 +99,7 @@
     <ClCompile Include="ImGuiWindow.cpp" />
     <ClCompile Include="Instructions.cpp" />
     <ClCompile Include="Interpreter.cpp" />
+    <ClCompile Include="InterpreterDebugger.cpp" />
     <ClCompile Include="Keyboard.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Resources.cpp" />
@@ -110,6 +111,7 @@
     <ClInclude Include="ImGuiWindow.h" />
     <ClInclude Include="Instructions.h" />
     <ClInclude Include="Interpreter.h" />
+    <ClInclude Include="InterpreterDebugger.h" />
     <ClInclude Include="Keyboard.h" />
     <ClInclude Include="Resources.h" />
     <ClInclude Include="Sound.h" />

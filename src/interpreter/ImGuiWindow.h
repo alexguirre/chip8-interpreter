@@ -1,6 +1,7 @@
 #pragma once
 #include <SDL2/SDL.h>
 #include <memory>
+#include <string>
 
 class CImGuiWindow
 {
@@ -9,7 +10,7 @@ private:
 	std::unique_ptr<Impl> mImpl;
 
 public:
-	CImGuiWindow();
+	CImGuiWindow(const std::string& title);
 	~CImGuiWindow();
 
 	bool ProcessEvent(const SDL_Event& event);

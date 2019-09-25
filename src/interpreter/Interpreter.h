@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <filesystem>
 #include <chrono>
+#include <optional>
+#include <functional>
 #include "Instructions.h"
 #include "Display.h"
 #include "Keyboard.h"
@@ -72,7 +74,8 @@ public:
 	void LoadProgram(const std::filesystem::path& filePath);
 	void LoadState(const std::filesystem::path& filePath);
 	void SaveState(const std::filesystem::path& filePath) const;
-	const SInstruction& FindInstruction(std::uint16_t opcode);
+	const SInstruction& FindInstruction(std::uint16_t opcode) const;
+	std::optional<std::reference_wrapper<const SInstruction>> TryFindInstruction(std::uint16_t opcode) const;
 
 private:
 	void DoCycle();

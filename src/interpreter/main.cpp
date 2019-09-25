@@ -3,18 +3,7 @@
 #include <tclap/CmdLine.h>
 #include <gsl/gsl_util>
 #include "Interpreter.h"
-
-#include "ImGuiWindow.h"
-#include <imgui.h>
-
-class CImGuiDemoWindow : public CImGuiWindow
-{
-public:
-	void Draw() override
-	{
-		ImGui::ShowDemoWindow();
-	}
-};
+#include "InterpreterDebugger.h"
 
 int main(int argc, char* argv[])
 {
@@ -33,7 +22,7 @@ int main(int argc, char* argv[])
 		CInterpreter interpreter;
 		interpreter.LoadProgram(inputArg.getValue());
 
-		CImGuiDemoWindow window, window2;
+		CInterpreterDebugger debugger{ interpreter };
 
 		bool quit = false;
 		while (!quit)
@@ -47,21 +36,19 @@ int main(int argc, char* argv[])
 				}
 				else if (e.type == SDL_KEYDOWN && e.key.keysym.scancode == SDL_SCANCODE_F5)
 				{
-					//interpreter.SaveState("save.ch8save");
+					interpreter.SaveState("save.ch8save");
 				}
 				else if (e.type == SDL_KEYDOWN && e.key.keysym.scancode == SDL_SCANCODE_F8)
 				{
-					//interpreter.LoadState("save.ch8save");
+					interpreter.LoadState("save.ch8save");
 				}
 
-				window.ProcessEvent(e);
-				window2.ProcessEvent(e);
+				debugger.ProcessEvent(e);
 			}
 
-			window.Render();
-			window2.Render();
+			debugger.Render();
 
-			//interpreter.Update();
+			interpreter.Update();
 		}
 	}
 	catch (const std::exception& e)

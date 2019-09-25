@@ -63,9 +63,6 @@ void CInterpreter::DoCycle()
 
 	// execute
 	const SInstruction& instr = FindInstruction(opcode);
-#if _DEBUG
-	std::cout << instr.ToString(c) << "\n";
-#endif
 	instr.Handler(c);
 
 	// move to next instruction
@@ -166,20 +163,32 @@ void CInterpreter::SaveState(const std::filesystem::path& filePath) const
 	file.write(c.PixelBuffer.data(), c.PixelBuffer.size() * sizeof(std::uint8_t));
 }
 
-const SInstruction& CInterpreter::FindInstruction(std::uint16_t opcode)
+const SInstruction& CInterpreter::FindInstruction(std::uint16_t opcode) const
+{
+	auto inst = TryFindInstruction(opcode);
+
+	if (!inst.has_value())
+	{
+		// not found, throw error
+		char hexBuffer[8];
+		std::snprintf(hexBuffer, std::size(hexBuffer), "%04X", opcode);
+		throw std::runtime_error("Unsupported instruction '" + std::string(hexBuffer) + "'");
+	}
+
+	return inst.value();
+}
+
+std::optional<std::reference_wrapper<const SInstruction>> CInterpreter::TryFindInstruction(std::uint16_t opcode) const
 {
 	for (auto& inst : SInstruction::InstructionSet)
 	{
 		if ((opcode & inst.OpcodeMask) == inst.Opcode)
 		{
-			return inst;
+			return std::cref(inst);
 		}
 	}
 
-	// not found, throw error
-	char hexBuffer[8];
-	std::snprintf(hexBuffer, std::size(hexBuffer), "%04X", opcode);
-	throw std::runtime_error("Unsupported instruction '" + std::string(hexBuffer) + "'");
+	return std::nullopt;
 }
 
 const std::array<std::uint8_t, 16 * CInterpreter::FontsetCharByteSize> CInterpreter::Fontset
