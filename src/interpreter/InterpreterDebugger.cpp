@@ -233,6 +233,14 @@ void CInterpreterDebugger::DrawDisassembly()
 				for (std::size_t i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
 				{
 					std::size_t addr = i * BytesPerLine;
+
+					// highlight background if we're at the current instruction
+					if (c.PC == addr)
+					{
+						ImVec2 pos = ImGui::GetCursorScreenPos();
+						ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(0.0f, pos.y), ImVec2(std::numeric_limits<float>::max(), pos.y + ImGui::GetTextLineHeight()), IM_COL32(200, 0, 0, 100));
+					}
+
 					if (addr >= CInterpreter::ProgramStartAddress)
 					{
 						ImGui::Text("%04X: ", addr);
@@ -251,14 +259,7 @@ void CInterpreterDebugger::DrawDisassembly()
 					if (inst.has_value())
 					{
 						std::string instStr = inst.value().get().ToString(contextCopy);
-						if (c.PC == addr)
-						{
-							ImGui::TextColored(ImVec4(0.75f, 0.1f, 0.1f, 1.0f), instStr.c_str());
-						}
-						else
-						{
-							ImGui::Text(instStr.c_str());
-						}
+						ImGui::Text(instStr.c_str());
 					}
 					else
 					{
