@@ -42,7 +42,9 @@ CDisplay::~CDisplay()
 
 void CDisplay::Update()
 {
-	SDL_SetRenderDrawColor(mRenderer, 0, 0, 0, 255);
+	SDL_SetRenderDrawColor(mRenderer,
+		std::get<0>(BackColor), std::get<1>(BackColor),
+		std::get<2>(BackColor), std::get<3>(BackColor));
 	SDL_RenderClear(mRenderer);
 
 	int w, h;
@@ -51,22 +53,28 @@ void CDisplay::Update()
 	const std::int32_t pixelW = w / ResolutionWidth;
 	const std::int32_t pixelH = h / ResolutionHeight;
 
+	constexpr std::size_t MaxRects{ ResolutionWidth * ResolutionHeight };
+	std::array<SDL_Rect, MaxRects> rects;
+	std::size_t rectCount = 0;
+
 	for (std::int32_t y = 0; y < ResolutionHeight; y++)
 	{
 		for (std::int32_t x = 0; x < ResolutionWidth; x++)
 		{
-			SDL_Rect pixel{
-				x * pixelW, y * pixelH,
-				pixelW, pixelH
-			};
-
-			RGBA c = (mPixelBuffer[x + y * ResolutionWidth]) ? PrimaryColor : SecondaryColor;
-			SDL_SetRenderDrawColor(mRenderer, 
-				std::get<0>(c), std::get<1>(c), std::get<2>(c), std::get<3>(c));
-			SDL_RenderFillRect(mRenderer, &pixel);
+			if (mPixelBuffer[x + y * ResolutionWidth])
+			{
+				rects[rectCount++] = {
+					x * pixelW, y * pixelH,
+					pixelW, pixelH
+				};
+			}
 		}
 	}
 
+	SDL_SetRenderDrawColor(mRenderer,
+		std::get<0>(ForeColor), std::get<1>(ForeColor),
+		std::get<2>(ForeColor), std::get<3>(ForeColor));
+	SDL_RenderFillRects(mRenderer, rects.data(), static_cast<int>(rectCount));
 	SDL_RenderPresent(mRenderer);
 }
 
