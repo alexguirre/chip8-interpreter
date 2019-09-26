@@ -6,7 +6,8 @@
 static const ImVec4 SubtitleColor{ 0.1f, 0.8f, 0.05f, 1.0f };
 
 CInterpreterDebugger::CInterpreterDebugger(CInterpreter& interpreter)
-	: CImGuiWindow("chip8-interpreter: Debugger"), mInterpreter(interpreter), mFirstDraw{ true }, mBreakpoints{}
+	: CImGuiWindow("chip8-interpreter: Debugger"), mInterpreter(interpreter), mFirstDraw{ true }, mBreakpoints{},
+	mDisassemblyGoToAddress{ InvalidDisassemblyGoToAddress }
 {
 }
 
@@ -224,6 +225,27 @@ void CInterpreterDebugger::DrawDisassembly()
 	{
 		ImGui::TextColored(SubtitleColor, "Disassembly");
 
+		// 'go to PC' button
+		{
+			const ImVec2 cursorPos = ImGui::GetCursorPos();
+			ImGui::SameLine(ImGui::GetWindowWidth() - 28.0f);
+			ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 2.0f);
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(SubtitleColor));
+			if (ImGui::Button(ICON_FA_CHEVRON_CIRCLE_RIGHT, ImVec2(0.0f, ImGui::GetTextLineHeightWithSpacing())))
+			{
+				mDisassemblyGoToAddress = mInterpreter.Context().PC;
+			}
+			ImGui::PopStyleColor(4);
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetTooltip("Go to PC");
+			}
+			ImGui::SetCursorPos(cursorPos);
+		}
+
 		ImGui::Separator();
 		if (ImGui::BeginChild("DisassemblyLines", ImVec2(0.0f, 0.0f), false))
 		{
@@ -237,6 +259,16 @@ void CInterpreterDebugger::DrawDisassembly()
 
 			constexpr std::int32_t BytesPerLine{ 2 };
 			constexpr std::int32_t LineTotalCount{ SContext::MemorySize / BytesPerLine };
+
+			// handle 'go to address' request
+			if (mDisassemblyGoToAddress != InvalidDisassemblyGoToAddress)
+			{
+				const std::size_t lineIndex = mDisassemblyGoToAddress / BytesPerLine;
+				const float offsetY = lineIndex * ImGui::GetTextLineHeightWithSpacing();
+				ImGui::SetScrollY(offsetY);
+				mDisassemblyGoToAddress = InvalidDisassemblyGoToAddress;
+			}
+
 			ImGuiListClipper clipper(LineTotalCount);
 			while (clipper.Step())
 			{
