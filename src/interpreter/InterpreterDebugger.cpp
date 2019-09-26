@@ -5,6 +5,8 @@
 
 static const ImVec4 SubtitleColor{ 0.1f, 0.8f, 0.05f, 1.0f };
 
+// TODO: debugger GUI should resize to fit window
+
 CInterpreterDebugger::CInterpreterDebugger(CInterpreter& interpreter)
 	: CImGuiWindow("chip8-interpreter: Debugger"), mInterpreter(interpreter), mFirstDraw{ true }, mBreakpoints{},
 	mDisassemblyGoToAddress{ InvalidDisassemblyGoToAddress }
