@@ -40,7 +40,7 @@ CDisplay::~CDisplay()
 	}
 }
 
-void CDisplay::Update()
+void CDisplay::Render()
 {
 	SDL_SetRenderDrawColor(mRenderer,
 		std::get<0>(BackColor), std::get<1>(BackColor),

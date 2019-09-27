@@ -48,22 +48,30 @@ void CInterpreter::Update()
 	{
 		Step();
 	}
-
-	mDisplay->Update();
 }
 
 void CInterpreter::Step()
 {
 	mKeyboard->GetState(mContext.Keyboard);
 
-	DoCycle();
+	const auto now = Clock::now();
 
-	auto clockNow = std::chrono::high_resolution_clock::now();
-	if (std::chrono::duration_cast<std::chrono::milliseconds>(clockNow - mClockPrev).count() >= ClockRateMs)
+	if ((now - mLastCycleTime) >= CyclesRateMs)
 	{
-		DoTick();
-		mClockPrev = clockNow;
+		DoCycle();
+		mLastCycleTime = now;
 	}
+
+	if ((now - mLastTimerTickTime) >= TimersRateMs)
+	{
+		DoTimerTick();
+		mLastTimerTickTime = now;
+	}
+}
+
+void CInterpreter::RenderDisplay()
+{
+	mDisplay->Render();
 }
 
 void CInterpreter::DoCycle()
@@ -80,9 +88,16 @@ void CInterpreter::DoCycle()
 
 	// move to next instruction
 	c.PC += 2;
+
+	// update display
+	if (mContext.PixelBufferDirty)
+	{
+		mDisplay->UpdatePixelBuffer(mContext.PixelBuffer);
+		mContext.PixelBufferDirty = false;
+	}
 }
 
-void CInterpreter::DoTick()
+void CInterpreter::DoTimerTick()
 {
 	if (mContext.DT > 0)
 	{
@@ -94,15 +109,14 @@ void CInterpreter::DoTick()
 		mContext.ST--;
 		if (mContext.ST == 0)
 		{
-			using namespace std::chrono_literals;
-			mSound->Beep(550, 50ms);
+			DoBeep();
 		}
 	}
+}
 
-	if (mContext.PixelBufferDirty)
-	{
-		mDisplay->UpdatePixelBuffer(mContext.PixelBuffer);
-	}
+void CInterpreter::DoBeep()
+{
+	mSound->Beep(BeepFrequency, BeepDuration);
 }
 
 void CInterpreter::LoadProgram(const std::filesystem::path& filePath)

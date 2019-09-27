@@ -43,18 +43,27 @@ struct SContext
 class CInterpreter
 {
 public:
-	static constexpr std::uint16_t ProgramStartAddress = 0x200;
-	static constexpr std::size_t FontsetCharByteSize = 5;
+	using Clock = std::chrono::high_resolution_clock;
+
+	static constexpr std::uint16_t ProgramStartAddress{ 0x200 };
+	static constexpr std::size_t FontsetCharByteSize{ 5 };
 	static const std::array<std::uint8_t, 16 * FontsetCharByteSize> Fontset;
-	static constexpr std::uint64_t ClockHz = 60;
-	static constexpr std::uint64_t ClockRateMs = static_cast<std::uint64_t>((1.0 / ClockHz) * 1000 + 0.5);
+	
+	static constexpr std::size_t CyclesHz{ 600 };	// Number of instructions executed per second
+	static constexpr std::chrono::milliseconds CyclesRateMs{ static_cast<std::size_t>((1.0 / CyclesHz) * 1000.0 + 0.5) };
+	static constexpr std::size_t TimersHz{ 60 };	// Number of times the timers are decreased per second
+	static constexpr std::chrono::milliseconds TimersRateMs{ static_cast<std::size_t>((1.0 / TimersHz) * 1000.0 + 0.5) };
+	
+	static constexpr double BeepFrequency{ 550.0 };
+	static constexpr std::chrono::milliseconds BeepDuration{ 50 };
 
 private:
 	SContext mContext;
 	std::unique_ptr<CDisplay> mDisplay;
 	std::unique_ptr<CKeyboard> mKeyboard;
 	std::unique_ptr<CSound> mSound;
-	std::chrono::high_resolution_clock::time_point mClockPrev;
+	Clock::time_point mLastCycleTime;
+	Clock::time_point mLastTimerTickTime;
 	bool mPaused;
 
 public:
@@ -75,6 +84,7 @@ public:
 	void Pause(bool pause);
 	void Update();
 	void Step();
+	void RenderDisplay();
 
 	void LoadProgram(const std::filesystem::path& filePath);
 	void LoadState(const std::filesystem::path& filePath);
@@ -84,6 +94,7 @@ public:
 
 private:
 	void DoCycle();
-	void DoTick();
+	void DoTimerTick();
+	void DoBeep();
 };
 

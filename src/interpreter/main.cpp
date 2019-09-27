@@ -48,6 +48,7 @@ int main(int argc, char* argv[])
 			}
 
 			debugger.Render();
+			interpreter.RenderDisplay();
 
 			interpreter.Update();
 		}

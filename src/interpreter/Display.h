@@ -30,6 +30,6 @@ public:
 	CDisplay(CDisplay&&) = default;
 	CDisplay& operator=(CDisplay&&) = default;
 
-	void Update();
+	void Render();
 	void UpdatePixelBuffer(const PixelBuffer& src);
 };
