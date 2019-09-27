@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <thread>
 #include <tclap/CmdLine.h>
 #include <gsl/gsl_util>
 #include "Interpreter.h"
@@ -26,8 +27,23 @@ int main(int argc, char* argv[])
 		CInterpreterDebugger debugger{ interpreter };
 
 		bool quit = false;
+
+		// TODO: CInterpreter is not fully thread-safe
+		std::thread interpreterThread([&interpreter, &quit]()
+			{
+				while (!quit)
+				{
+					std::this_thread::yield();
+
+					interpreter.Update();
+				}
+			}
+		);
+
 		while (!quit)
 		{
+			std::this_thread::yield();
+
 			SDL_Event e;
 			while (SDL_PollEvent(&e))
 			{
@@ -37,11 +53,19 @@ int main(int argc, char* argv[])
 				}
 				else if (e.type == SDL_KEYDOWN && e.key.keysym.scancode == SDL_SCANCODE_F5)
 				{
+					// Pause because CInterpreter is not thread-safe so it could try modify the state
+					// while saving it. Not the ideal solution, could still cause issues.
+					interpreter.Pause(true);
 					interpreter.SaveState("save.ch8save");
+					interpreter.Pause(false);
 				}
 				else if (e.type == SDL_KEYDOWN && e.key.keysym.scancode == SDL_SCANCODE_F8)
 				{
+					// Pause because CInterpreter is not thread-safe so it could try to execute
+					// the program while loading the state. Not the ideal solution, could still cause issues.
+					interpreter.Pause(true);
 					interpreter.LoadState("save.ch8save");
+					interpreter.Pause(false);
 				}
 
 				debugger.ProcessEvent(e);
@@ -49,9 +73,9 @@ int main(int argc, char* argv[])
 
 			debugger.Render();
 			interpreter.RenderDisplay();
-
-			interpreter.Update();
 		}
+
+		interpreterThread.join();
 	}
 	catch (const std::exception& e)
 	{
