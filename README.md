@@ -2,6 +2,8 @@
 
 A Chip-8 interpreter written in C++17.
 
+![Interpreter demo](https://i.imgur.com/jPXOMiE.gif)
+
 ## Dependencies
 
 - [dear imgui](https://github.com/dmatlack/chip8)
