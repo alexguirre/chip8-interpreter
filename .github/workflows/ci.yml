@@ -23,9 +23,11 @@ jobs:
           .\vcpkg install sdl2:x64-windows-static
           .\vcpkg install tclap:x64-windows-static
           cd ..
-      - name: Setup Visual Studio environment
-        run: call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
       - name: Build Debug
-        run: devenv src/chip8-interpreter.sln /Build Debug
+        run: |
+          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          devenv src/chip8-interpreter.sln /Build Debug
       - name: Build Release
-        run: devenv src/chip8-interpreter.sln /Build Release
+        run: |
+          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          devenv src/chip8-interpreter.sln /Build Release
