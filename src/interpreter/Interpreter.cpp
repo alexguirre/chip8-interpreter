@@ -82,12 +82,12 @@ void CInterpreter::DoCycle()
 	std::uint16_t opcode = c.Memory[c.PC] << 8 | c.Memory[c.PC + 1];
 	c.IR = opcode;
 
+	// move to next instruction
+	c.PC += 2;
+
 	// execute
 	const SInstruction& instr = FindInstruction(opcode);
 	instr.Handler(c);
-
-	// move to next instruction
-	c.PC += 2;
 
 	// update display
 	if (mContext.PixelBufferDirty)

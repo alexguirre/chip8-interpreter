@@ -12,13 +12,13 @@ static std::string CLS_ToString(SContext&) { return "CLS"; }
 
 static void RET_Handler(SContext& c)
 {
-	c.PC = c.Stack[--c.SP] - 2; // -2 because Update always adds +2
+	c.PC = c.Stack[--c.SP];
 }
 static std::string RET_ToString(SContext&) { return "RET"; }
 
 static void JP_Handler(SContext& c)
 {
-	c.PC = c.NNN() - 2; // -2 because Update always adds +2
+	c.PC = c.NNN();
 }
 static std::string JP_ToString(SContext& c)
 {
@@ -29,8 +29,8 @@ static std::string JP_ToString(SContext& c)
 
 static void CALL_Handler(SContext& c)
 {
-	c.Stack[c.SP++] = c.PC + 2;
-	c.PC = c.NNN() - 2; // -2 because Update always adds +2
+	c.Stack[c.SP++] = c.PC;
+	c.PC = c.NNN();
 }
 static std::string CALL_ToString(SContext& c)
 {
@@ -242,7 +242,7 @@ static std::string LD_I_ToString(SContext& c)
 
 static void JP_2_Handler(SContext& c)
 {
-	c.PC = c.NNN() + c.V[0] - 2; // -2 because Update always adds +2
+	c.PC = c.NNN() + c.V[0];
 }
 static std::string JP_2_ToString(SContext& c)
 {
