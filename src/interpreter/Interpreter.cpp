@@ -83,7 +83,7 @@ void CInterpreter::DoCycle()
 	c.IR = opcode;
 
 	// move to next instruction
-	c.PC += 2;
+	c.PC += InstructionByteSize;
 
 	// execute
 	const SInstruction& instr = FindInstruction(opcode);

@@ -259,7 +259,7 @@ void CInterpreterDebugger::DrawDisassembly()
 				ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(pos.x, 0.0f), ImVec2(pos.x + LeftGapWidth, std::numeric_limits<float>::max()), IM_COL32(50, 50, 50, 180));
 			}
 
-			constexpr std::int32_t BytesPerLine{ 2 };
+			constexpr std::int32_t BytesPerLine{ CInterpreter::InstructionByteSize };
 			constexpr std::int32_t LineTotalCount{ SContext::MemorySize / BytesPerLine };
 
 			// handle 'go to address' request

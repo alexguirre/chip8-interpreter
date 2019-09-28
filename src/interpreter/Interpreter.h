@@ -46,6 +46,7 @@ public:
 	using Clock = std::chrono::high_resolution_clock;
 
 	static constexpr std::uint16_t ProgramStartAddress{ 0x200 };
+	static constexpr std::size_t InstructionByteSize{ 2 };	// Size of an instruction in bytes
 	static constexpr std::size_t FontsetCharByteSize{ 5 };
 	static const std::array<std::uint8_t, 16 * FontsetCharByteSize> Fontset;
 	

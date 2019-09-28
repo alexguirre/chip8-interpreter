@@ -10,7 +10,7 @@ private:
 
 	CInterpreter& mInterpreter;
 	bool mFirstDraw;
-	std::array<bool, (SContext::MemorySize / 2)> mBreakpoints;
+	std::array<bool, (SContext::MemorySize / CInterpreter::InstructionByteSize)> mBreakpoints;
 	std::size_t mDisassemblyGoToAddress;
 
 public:

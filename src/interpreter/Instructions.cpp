@@ -43,7 +43,7 @@ static void SE_Handler(SContext& c)
 {
 	if (c.V[c.X()] == c.KK())
 	{
-		c.PC += 2;
+		c.PC += CInterpreter::InstructionByteSize;
 	}
 }
 static std::string SE_ToString(SContext& c)
@@ -57,7 +57,7 @@ static void SNE_Handler(SContext& c)
 {
 	if (c.V[c.X()] != c.KK())
 	{
-		c.PC += 2;
+		c.PC += CInterpreter::InstructionByteSize;
 	}
 }
 static std::string SNE_ToString(SContext& c)
@@ -71,7 +71,7 @@ static void SE_2_Handler(SContext& c)
 {
 	if (c.V[c.X()] == c.V[c.Y()])
 	{
-		c.PC += 2;
+		c.PC += CInterpreter::InstructionByteSize;
 	}
 }
 static std::string SE_2_ToString(SContext& c)
@@ -219,7 +219,7 @@ static void SNE_2_Handler(SContext& c)
 {
 	if (c.V[c.X()] != c.V[c.Y()])
 	{
-		c.PC += 2;
+		c.PC += CInterpreter::InstructionByteSize;
 	}
 }
 static std::string SNE_2_ToString(SContext& c)
@@ -309,7 +309,7 @@ static void SKP_Handler(SContext& c)
 	std::uint8_t vx = c.V[c.X()];
 	if (c.Keyboard[vx])
 	{
-		c.PC += 2;
+		c.PC += CInterpreter::InstructionByteSize;
 	}
 }
 static std::string SKP_ToString(SContext& c)
@@ -324,7 +324,7 @@ static void SKNP_Handler(SContext& c)
 	std::uint8_t vx = c.V[c.X()];
 	if (!c.Keyboard[vx])
 	{
-		c.PC += 2;
+		c.PC += CInterpreter::InstructionByteSize;
 	}
 }
 static std::string SKNP_ToString(SContext& c)
@@ -357,7 +357,7 @@ static void LD_4_Handler(SContext& c)
 	}
 
 	// no key was pressed, move the PC back to execute this instruction again in the next cycle
-	c.PC -= 2;
+	c.PC -= CInterpreter::InstructionByteSize;
 }
 static std::string LD_4_ToString(SContext& c)
 {
