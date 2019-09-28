@@ -17,12 +17,12 @@ jobs:
           .\vcpkg integrate install
       - name: Install dependencies
         run: |
+          cd vcpkg
           .\vcpkg install imgui:x64-windows-static
           .\vcpkg install gl3w:x64-windows-static
           .\vcpkg install ms-gsl:x64-windows-static
           .\vcpkg install sdl2:x64-windows-static
           .\vcpkg install tclap:x64-windows-static
-          cd ..
       - name: Build Debug
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
