@@ -1,0 +1,36 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+    
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          cd vcpkg
+          .\bootstrap-vcpkg.bat          
+      - name: Integrate vcpkg
+        run: |
+          cd vcpkg
+          .\vcpkg integrate install
+      - name: Install dependencies
+        run: |
+          cd vcpkg
+          .\vcpkg install imgui:x64-windows-static
+          .\vcpkg install gl3w:x64-windows-static
+          .\vcpkg install ms-gsl:x64-windows-static
+          .\vcpkg install sdl2:x64-windows-static
+          .\vcpkg install tclap:x64-windows-static
+      - name: Build Debug
+        run: |
+          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          devenv src/chip8-interpreter.sln /Build Debug
+      - name: Build Release
+        run: |
+          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          devenv src/chip8-interpreter.sln /Build Release
