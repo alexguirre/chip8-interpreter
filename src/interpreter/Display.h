@@ -11,6 +11,7 @@ public:
 	static constexpr std::size_t ResolutionHeight{ 32 };
 	
 	using PixelBuffer = std::array<std::uint8_t, (ResolutionWidth * ResolutionHeight)>;
+	static constexpr std::size_t PixelBufferCount{ 3 }; // Number of pixel buffers, >1 to reduce flickering
 
 	using RGBA = std::tuple<std::uint8_t, std::uint8_t, std::uint8_t, std::uint8_t>;
 	static constexpr RGBA ForeColor{ std::uint8_t{0}, std::uint8_t{100}, std::uint8_t{0}, std::uint8_t{255} };
@@ -19,7 +20,8 @@ public:
 private:
 	SDL_Window* mWindow;
 	SDL_Renderer* mRenderer;
-	PixelBuffer mPixelBuffer;
+	std::array<PixelBuffer, PixelBufferCount> mPixelBuffers;
+	std::size_t mNextPixelBuffer;
 
 public:
 	CDisplay();

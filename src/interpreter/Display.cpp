@@ -2,7 +2,7 @@
 #include <stdexcept>
 
 CDisplay::CDisplay()
-	: mPixelBuffer()
+	: mPixelBuffers{}, mNextPixelBuffer{ 0 }
 {
 	mWindow = SDL_CreateWindow(
 		"chip8-interpreter",
@@ -61,7 +61,13 @@ void CDisplay::Render()
 	{
 		for (std::int32_t x = 0; x < ResolutionWidth; x++)
 		{
-			if (mPixelBuffer[x + y * ResolutionWidth])
+			const std::size_t pixelIndex = x + y * ResolutionWidth;
+			
+			// check if the pixel is set in any of the buffers
+			if (std::any_of(mPixelBuffers.begin(), mPixelBuffers.end(), [pixelIndex](const auto& buffer)
+				{
+					return buffer[pixelIndex];
+				}))
 			{
 				rects[rectCount++] = {
 					x * pixelW, y * pixelH,
@@ -83,6 +89,9 @@ void CDisplay::UpdatePixelBuffer(const PixelBuffer& src)
 	std::copy(
 		src.begin(),
 		src.end(),
-		mPixelBuffer.begin()
+		mPixelBuffers[mNextPixelBuffer].begin()
 	);
+
+	// set the buffer to update next
+	mNextPixelBuffer = (mNextPixelBuffer + 1) % mPixelBuffers.size();
 }
