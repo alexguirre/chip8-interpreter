@@ -1,5 +1,7 @@
 # Chip-8 Interpreter
 
+[![CI](https://github.com/alexguirre/chip8-interpreter/workflows/CI/badge.svg)](https://github.com/alexguirre/chip8-interpreter/actions?workflow=CI)
+
 A Chip-8 interpreter written in C++17.
 
 ![Interpreter demo](https://i.imgur.com/jPXOMiE.gif)
