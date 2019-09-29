@@ -324,10 +324,11 @@ void CInterpreterDebugger::DrawDisassembly()
 					contextCopy.PC = static_cast<std::uint16_t>(addr);
 					contextCopy.IR = opcode;
 
-					auto inst = mInterpreter.TryFindInstruction(opcode);
-					if (inst.has_value())
+					auto instOpt = mInterpreter.TryFindInstruction(opcode);
+					if (instOpt.has_value())
 					{
-						std::string instStr = inst.value().get().ToString(contextCopy);
+						const SInstruction& inst = instOpt.value().get();
+						std::string instStr = inst.ToString(inst, contextCopy);
 						ImGui::Text(instStr.c_str());
 					}
 					else

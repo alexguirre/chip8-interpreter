@@ -2,11 +2,13 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <functional>
 
 struct SContext;
+struct SInstruction;
 
-using FInstructionHandler = void(*)(SContext& context);
-using FInstructionToString = std::string(*)(SContext& context);
+using FInstructionHandler = std::function<void(SContext&)>;
+using FInstructionToString = std::function<std::string(const SInstruction&, const SContext&)>;
 
 struct SInstruction
 {

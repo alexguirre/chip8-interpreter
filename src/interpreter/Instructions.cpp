@@ -3,40 +3,88 @@
 #include <random>
 #include "Interpreter.h"
 
+static std::string ToString_NAME(const SInstruction& i, const SContext&)
+{
+	return i.Name;
+}
+
+static std::string ToString_NAME_nnn(const SInstruction& i, const SContext& c)
+{
+	std::ostringstream ss;
+	ss << i.Name << " " << std::uppercase << std::hex << std::setfill('0') << std::setw(3) << static_cast<std::uint32_t>(c.NNN());
+	return ss.str();
+}
+
+static std::string ToString_NAME_Vx_kk(const SInstruction& i, const SContext& c)
+{
+	std::ostringstream ss;
+	ss << i.Name << " V" << std::uppercase << std::hex << static_cast<std::uint32_t>(c.X()) << ", " << std::uppercase << std::hex << std::setfill('0') << std::setw(2) << static_cast<std::uint32_t>(c.KK());
+	return ss.str();
+}
+
+static std::string ToString_NAME_Vx_Vy(const SInstruction& i, const SContext& c)
+{
+	std::ostringstream ss;
+	ss << i.Name << " V" << std::uppercase << std::hex << static_cast<std::uint32_t>(c.X()) << ", V" << std::uppercase << std::hex << static_cast<std::uint32_t>(c.Y());
+	return ss.str();
+}
+
+static std::string ToString_NAME_Vx(const SInstruction& i, const SContext& c)
+{
+	std::ostringstream ss;
+	ss << i.Name << " V" << std::uppercase << std::uppercase << std::hex << static_cast<std::uint32_t>(c.X());
+	return ss.str();
+}
+
+static std::string ToString_NAME_dst_nnn(const SInstruction& i, const SContext& c, std::string_view dstName)
+{
+	std::ostringstream ss;
+	ss << i.Name << " " << dstName <<", " << std::uppercase << std::hex << std::setfill('0') << std::setw(3) << static_cast<std::uint32_t>(c.NNN());
+	return ss.str();
+}
+
+static std::string ToString_NAME_Vx_Vy_n(const SInstruction& i, const SContext& c)
+{
+	std::ostringstream ss;
+	ss << i.Name << " V" << std::uppercase << std::hex << static_cast<std::uint32_t>(c.X()) << ", V" << std::uppercase << std::hex << static_cast<std::uint32_t>(c.Y())
+		<< ", " << std::uppercase << std::hex << static_cast<std::uint32_t>(c.N());
+	return ss.str();
+}
+
+static std::string ToString_NAME_Vx_src(const SInstruction& i, const SContext& c, std::string_view srcName)
+{
+	std::ostringstream ss;
+	ss << i.Name << " V" << std::uppercase << std::uppercase << std::hex << static_cast<std::uint32_t>(c.X()) << ", " << srcName;
+	return ss.str();
+}
+
+static std::string ToString_NAME_dst_Vx(const SInstruction& i, const SContext& c, std::string_view dstName)
+{
+	std::ostringstream ss;
+	ss << i.Name << " " << dstName << ", V" << std::uppercase << std::uppercase << std::hex << static_cast<std::uint32_t>(c.X());
+	return ss.str();
+}
+
 static void CLS_Handler(SContext& c)
 {
 	std::fill(c.PixelBuffer.begin(), c.PixelBuffer.end(), std::uint8_t(0));
 	c.PixelBufferDirty = true;
 }
-static std::string CLS_ToString(SContext&) { return "CLS"; }
 
 static void RET_Handler(SContext& c)
 {
 	c.PC = c.Stack[--c.SP];
 }
-static std::string RET_ToString(SContext&) { return "RET"; }
 
 static void JP_Handler(SContext& c)
 {
 	c.PC = c.NNN();
-}
-static std::string JP_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "JP " << std::hex << std::setfill('0') << std::setw(3) << static_cast<std::uint32_t>(c.NNN());
-	return ss.str();
 }
 
 static void CALL_Handler(SContext& c)
 {
 	c.Stack[c.SP++] = c.PC;
 	c.PC = c.NNN();
-}
-static std::string CALL_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "CALL " << std::hex << std::setfill('0') << std::setw(3) << static_cast<std::uint32_t>(c.NNN());
-	return ss.str();
 }
 
 static void SE_Handler(SContext& c)
@@ -46,12 +94,6 @@ static void SE_Handler(SContext& c)
 		c.PC += CInterpreter::InstructionByteSize;
 	}
 }
-static std::string SE_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "SE V" << std::hex << static_cast<std::uint32_t>(c.X()) << ", " << std::hex << std::setfill('0') << std::setw(2) << static_cast<std::uint32_t>(c.KK());
-	return ss.str();
-}
 
 static void SNE_Handler(SContext& c)
 {
@@ -59,12 +101,6 @@ static void SNE_Handler(SContext& c)
 	{
 		c.PC += CInterpreter::InstructionByteSize;
 	}
-}
-static std::string SNE_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "SNE V" << std::hex << static_cast<std::uint32_t>(c.X()) << ", " << std::hex << std::setfill('0') << std::setw(2) << static_cast<std::uint32_t>(c.KK());
-	return ss.str();
 }
 
 static void SE_2_Handler(SContext& c)
@@ -74,77 +110,35 @@ static void SE_2_Handler(SContext& c)
 		c.PC += CInterpreter::InstructionByteSize;
 	}
 }
-static std::string SE_2_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "SE V" << std::hex << static_cast<std::uint32_t>(c.X()) << ", V" << std::hex << static_cast<std::uint32_t>(c.Y());
-	return ss.str();
-}
 
 static void LD_Handler(SContext& c)
 {
 	c.V[c.X()] = c.KK();
-}
-static std::string LD_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "LD V" << std::hex << static_cast<std::uint32_t>(c.X()) << ", " << std::hex << std::setfill('0') << std::setw(2) << static_cast<std::uint32_t>(c.KK());
-	return ss.str();
 }
 
 static void ADD_Handler(SContext& c)
 {
 	c.V[c.X()] += c.KK();
 }
-static std::string ADD_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "ADD V" << std::hex << static_cast<std::uint32_t>(c.X()) << ", " << std::hex << std::setfill('0') << std::setw(2) << static_cast<std::uint32_t>(c.KK());
-	return ss.str();
-}
 
 static void LD_2_Handler(SContext& c)
 {
 	c.V[c.X()] = c.V[c.Y()];
-}
-static std::string LD_2_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "LD V" << std::hex << static_cast<std::uint32_t>(c.X()) << ", V" << std::hex << static_cast<std::uint32_t>(c.Y());
-	return ss.str();
 }
 
 static void OR_Handler(SContext& c)
 {
 	c.V[c.X()] |= c.V[c.Y()];
 }
-static std::string OR_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "OR V" << std::hex << static_cast<std::uint32_t>(c.X()) << ", V" << std::hex << static_cast<std::uint32_t>(c.Y());
-	return ss.str();
-}
 
 static void AND_Handler(SContext& c)
 {
 	c.V[c.X()] &= c.V[c.Y()];
 }
-static std::string AND_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "AND V" << std::hex << static_cast<std::uint32_t>(c.X()) << ", V" << std::hex << static_cast<std::uint32_t>(c.Y());
-	return ss.str();
-}
 
 static void XOR_Handler(SContext& c)
 {
 	c.V[c.X()] ^= c.V[c.Y()];
-}
-static std::string XOR_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "XOR V" << std::hex << static_cast<std::uint32_t>(c.X()) << ", V" << std::hex << static_cast<std::uint32_t>(c.Y());
-	return ss.str();
 }
 
 static void ADD_2_Handler(SContext& c)
@@ -154,12 +148,6 @@ static void ADD_2_Handler(SContext& c)
 	c.V[0xF] = static_cast<std::int32_t>(vx) + static_cast<std::int32_t>(vy) > std::numeric_limits<std::uint8_t>::max();
 	vx += vy;
 }
-static std::string ADD_2_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "ADD V" << std::hex << static_cast<std::uint32_t>(c.X()) << ", V" << std::hex << static_cast<std::uint32_t>(c.Y());
-	return ss.str();
-}
 
 static void SUB_Handler(SContext& c)
 {
@@ -168,24 +156,12 @@ static void SUB_Handler(SContext& c)
 	c.V[0xF] = vx > vy;
 	vx -= vy;
 }
-static std::string SUB_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "SUB V" << std::hex << static_cast<std::uint32_t>(c.X()) << ", V" << std::hex << static_cast<std::uint32_t>(c.Y());
-	return ss.str();
-}
 
 static void SHR_Handler(SContext& c)
 {
 	std::uint8_t& vx = c.V[c.X()];
 	c.V[0xF] = vx & 1;
 	vx >>= 1;
-}
-static std::string SHR_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "SHR V" << std::hex << static_cast<std::uint32_t>(c.X());
-	return ss.str();
 }
 
 static void SUBN_Handler(SContext& c)
@@ -195,24 +171,12 @@ static void SUBN_Handler(SContext& c)
 	c.V[0xF] = vy > vx;
 	vx = vy - vx;
 }
-static std::string SUBN_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "SUBN V" << std::hex << static_cast<std::uint32_t>(c.X()) << ", V" << std::hex << static_cast<std::uint32_t>(c.Y());
-	return ss.str();
-}
 
 static void SHL_Handler(SContext& c)
 {
 	std::uint8_t& vx = c.V[c.X()];
 	c.V[0xF] = (vx >> 7) & 1;
 	vx <<= 1;
-}
-static std::string SHL_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "SHL V" << std::hex << static_cast<std::uint32_t>(c.X());
-	return ss.str();
 }
 
 static void SNE_2_Handler(SContext& c)
@@ -222,33 +186,15 @@ static void SNE_2_Handler(SContext& c)
 		c.PC += CInterpreter::InstructionByteSize;
 	}
 }
-static std::string SNE_2_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "SNE V" << std::hex << static_cast<std::uint32_t>(c.X()) << ", V" << std::hex << static_cast<std::uint32_t>(c.Y());
-	return ss.str();
-}
 
 static void LD_I_Handler(SContext& c)
 {
 	c.I = c.NNN();
 }
-static std::string LD_I_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "LD I, " << std::hex << std::setfill('0') << std::setw(3) << static_cast<std::uint32_t>(c.NNN());
-	return ss.str();
-}
 
 static void JP_2_Handler(SContext& c)
 {
 	c.PC = c.NNN() + c.V[0];
-}
-static std::string JP_2_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "JP V0, " << std::hex << std::setfill('0') << std::setw(3) << static_cast<std::uint32_t>(c.NNN());
-	return ss.str();
 }
 
 static void RND_Handler(SContext& c)
@@ -260,12 +206,6 @@ static void RND_Handler(SContext& c)
 
 	std::uint8_t rnd = static_cast<std::uint8_t>(dist(gen));
 	c.V[c.X()] = rnd & c.KK();
-}
-static std::string RND_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "RND V" << std::hex << static_cast<std::uint32_t>(c.X()) << ", " << std::hex << std::setfill('0') << std::setw(2) << static_cast<std::uint32_t>(c.KK());
-	return ss.str();
 }
 
 static void DRW_Handler(SContext& c)
@@ -297,12 +237,6 @@ static void DRW_Handler(SContext& c)
 	}
 	c.PixelBufferDirty = true;
 }
-static std::string DRW_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "DRW V" << std::hex << static_cast<std::uint32_t>(c.X()) << ", V" << std::hex << static_cast<std::uint32_t>(c.Y()) << ", " << std::hex << static_cast<std::uint32_t>(c.N());
-	return ss.str();
-}
 
 static void SKP_Handler(SContext& c)
 {
@@ -311,12 +245,6 @@ static void SKP_Handler(SContext& c)
 	{
 		c.PC += CInterpreter::InstructionByteSize;
 	}
-}
-static std::string SKP_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "SKP V" << std::hex << static_cast<std::uint32_t>(c.X());
-	return ss.str();
 }
 
 static void SKNP_Handler(SContext& c)
@@ -327,22 +255,10 @@ static void SKNP_Handler(SContext& c)
 		c.PC += CInterpreter::InstructionByteSize;
 	}
 }
-static std::string SKNP_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "SKNP V" << std::hex << static_cast<std::uint32_t>(c.X());
-	return ss.str();
-}
 
 static void LD_3_Handler(SContext& c)
 {
 	c.V[c.X()] = c.DT;
-}
-static std::string LD_3_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "LD V" << std::hex << static_cast<std::uint32_t>(c.X()) << ", DT";
-	return ss.str();
 }
 
 static void LD_4_Handler(SContext& c)
@@ -359,33 +275,15 @@ static void LD_4_Handler(SContext& c)
 	// no key was pressed, move the PC back to execute this instruction again in the next cycle
 	c.PC -= CInterpreter::InstructionByteSize;
 }
-static std::string LD_4_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "LD V" << std::hex << static_cast<std::uint32_t>(c.X()) << ", K";
-	return ss.str();
-}
 
 static void LD_5_Handler(SContext& c)
 {
 	c.DT = c.V[c.X()];
 }
-static std::string LD_5_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "LD DT, V" << std::hex << static_cast<std::uint32_t>(c.X());
-	return ss.str();
-}
 
 static void LD_6_Handler(SContext& c)
 {
 	c.ST = c.V[c.X()];
-}
-static std::string LD_6_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "LD ST, V" << std::hex << static_cast<std::uint32_t>(c.X());
-	return ss.str();
 }
 
 static void ADD_I_Handler(SContext& c)
@@ -394,22 +292,10 @@ static void ADD_I_Handler(SContext& c)
 	c.V[0xF] = static_cast<std::int32_t>(vx) + static_cast<std::int32_t>(c.I) > std::numeric_limits<std::uint8_t>::max();
 	c.I += vx;
 }
-static std::string ADD_I_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "ADD I, V" << std::hex << static_cast<std::uint32_t>(c.X());
-	return ss.str();
-}
 
 static void LD_7_Handler(SContext& c)
 {
 	c.I = CInterpreter::FontsetCharByteSize * c.V[c.X()];
-}
-static std::string LD_7_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "LD F, V" << std::hex << static_cast<std::uint32_t>(c.X());
-	return ss.str();
 }
 
 static void LD_8_Handler(SContext& c)
@@ -423,12 +309,6 @@ static void LD_8_Handler(SContext& c)
 	c.Memory[c.I + 1] = tens;
 	c.Memory[c.I + 2] = ones;
 }
-static std::string LD_8_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "LD B, V" << std::hex << static_cast<std::uint32_t>(c.X());
-	return ss.str();
-}
 
 static void LD_9_Handler(SContext& c)
 {
@@ -438,12 +318,6 @@ static void LD_9_Handler(SContext& c)
 		c.Memory[c.I + i] = c.V[i];
 	}
 	c.I += x + 1;
-}
-static std::string LD_9_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "LD [I], V" << std::hex << static_cast<std::uint32_t>(c.X());
-	return ss.str();
 }
 
 static void LD_10_Handler(SContext& c)
@@ -455,47 +329,43 @@ static void LD_10_Handler(SContext& c)
 	}
 	c.I += x + 1;
 }
-static std::string LD_10_ToString(SContext& c)
-{
-	std::ostringstream ss;
-	ss << "LD V" << std::hex << static_cast<std::uint32_t>(c.X()) << ", [I]";
-	return ss.str();
-}
+
+using namespace std::placeholders;
 
 const std::vector<SInstruction> SInstruction::InstructionSet =
 {
-	{ "CLS",	CLS_Handler,	0x00E0,	0xF0FF,	CLS_ToString	},
-	{ "RET",	RET_Handler,	0x00EE,	0xF0FF,	RET_ToString	},
-	{ "JP",		JP_Handler,		0x1000,	0xF000,	JP_ToString		},
-	{ "CALL",	CALL_Handler,	0x2000,	0xF000,	CALL_ToString	},
-	{ "SE",		SE_Handler,		0x3000,	0xF000,	SE_ToString		},
-	{ "SNE",	SNE_Handler,	0x4000,	0xF000,	SNE_ToString	},
-	{ "SE",		SE_2_Handler,	0x5000,	0xF00F,	SE_2_ToString	},
-	{ "LD",		LD_Handler,		0x6000,	0xF000,	LD_ToString		},
-	{ "ADD",	ADD_Handler,	0x7000,	0xF000,	ADD_ToString	},
-	{ "LD",		LD_2_Handler,	0x8000,	0xF00F,	LD_2_ToString	},
-	{ "OR",		OR_Handler,		0x8001,	0xF00F,	OR_ToString		},
-	{ "AND",	AND_Handler,	0x8002,	0xF00F,	AND_ToString	},
-	{ "XOR",	XOR_Handler,	0x8003,	0xF00F,	XOR_ToString	},
-	{ "ADD",	ADD_2_Handler,	0x8004,	0xF00F,	ADD_2_ToString	},
-	{ "SUB",	SUB_Handler,	0x8005,	0xF00F,	SUB_ToString	},
-	{ "SHR",	SHR_Handler,	0x8006,	0xF00F,	SHR_ToString	},
-	{ "SUBN",	SUBN_Handler,	0x8007,	0xF00F,	SUBN_ToString	},
-	{ "SHL",	SHL_Handler,	0x800E,	0xF00F,	SHL_ToString	},
-	{ "SNE",	SNE_2_Handler,	0x9000,	0xF00F,	SNE_2_ToString	},
-	{ "LD",		LD_I_Handler,	0xA000,	0xF000,	LD_I_ToString	},
-	{ "JP",		JP_2_Handler,	0xB000,	0xF000,	JP_2_ToString	},
-	{ "RND",	RND_Handler,	0xC000,	0xF000,	RND_ToString	},
-	{ "DRW",	DRW_Handler,	0xD000,	0xF000,	DRW_ToString	},
-	{ "SKP",	SKP_Handler,	0xE09E,	0xF0FF,	SKP_ToString	},
-	{ "SKNP",	SKNP_Handler,	0xE0A1,	0xF0FF,	SKNP_ToString	},
-	{ "LD",		LD_3_Handler,	0xF007,	0xF0FF,	LD_3_ToString	},
-	{ "LD",		LD_4_Handler,	0xF00A,	0xF0FF,	LD_4_ToString	},
-	{ "LD",		LD_5_Handler,	0xF015,	0xF0FF,	LD_5_ToString	},
-	{ "LD",		LD_6_Handler,	0xF018,	0xF0FF,	LD_6_ToString	},
-	{ "ADD",	ADD_I_Handler,	0xF01E,	0xF0FF,	ADD_I_ToString	},
-	{ "LD",		LD_7_Handler,	0xF029,	0xF0FF,	LD_7_ToString	},
-	{ "LD",		LD_8_Handler,	0xF033,	0xF0FF,	LD_8_ToString	},
-	{ "LD",		LD_9_Handler,	0xF055,	0xF0FF,	LD_9_ToString	},
-	{ "LD",		LD_10_Handler,	0xF065,	0xF0FF,	LD_10_ToString	},
+	{ "CLS",	CLS_Handler,	0x00E0,	0xF0FF,	ToString_NAME									},
+	{ "RET",	RET_Handler,	0x00EE,	0xF0FF,	ToString_NAME									},
+	{ "JP",		JP_Handler,		0x1000,	0xF000,	ToString_NAME_nnn								},
+	{ "CALL",	CALL_Handler,	0x2000,	0xF000,	ToString_NAME_nnn								},
+	{ "SE",		SE_Handler,		0x3000,	0xF000,	ToString_NAME_Vx_kk								},
+	{ "SNE",	SNE_Handler,	0x4000,	0xF000,	ToString_NAME_Vx_kk								},
+	{ "SE",		SE_2_Handler,	0x5000,	0xF00F,	ToString_NAME_Vx_Vy								},
+	{ "LD",		LD_Handler,		0x6000,	0xF000,	ToString_NAME_Vx_kk								},
+	{ "ADD",	ADD_Handler,	0x7000,	0xF000,	ToString_NAME_Vx_kk								},
+	{ "LD",		LD_2_Handler,	0x8000,	0xF00F,	ToString_NAME_Vx_Vy								},
+	{ "OR",		OR_Handler,		0x8001,	0xF00F,	ToString_NAME_Vx_Vy								},
+	{ "AND",	AND_Handler,	0x8002,	0xF00F,	ToString_NAME_Vx_Vy								},
+	{ "XOR",	XOR_Handler,	0x8003,	0xF00F,	ToString_NAME_Vx_Vy								},
+	{ "ADD",	ADD_2_Handler,	0x8004,	0xF00F,	ToString_NAME_Vx_Vy								},
+	{ "SUB",	SUB_Handler,	0x8005,	0xF00F,	ToString_NAME_Vx_Vy								},
+	{ "SHR",	SHR_Handler,	0x8006,	0xF00F,	ToString_NAME_Vx								},
+	{ "SUBN",	SUBN_Handler,	0x8007,	0xF00F,	ToString_NAME_Vx_Vy								},
+	{ "SHL",	SHL_Handler,	0x800E,	0xF00F,	ToString_NAME_Vx								},
+	{ "SNE",	SNE_2_Handler,	0x9000,	0xF00F,	ToString_NAME_Vx_Vy								},
+	{ "LD",		LD_I_Handler,	0xA000,	0xF000,	std::bind(ToString_NAME_dst_nnn, _1, _2, "I")	},
+	{ "JP",		JP_2_Handler,	0xB000,	0xF000,	std::bind(ToString_NAME_dst_nnn, _1, _2, "V0")	},
+	{ "RND",	RND_Handler,	0xC000,	0xF000,	ToString_NAME_Vx_kk								},
+	{ "DRW",	DRW_Handler,	0xD000,	0xF000,	ToString_NAME_Vx_Vy_n							},
+	{ "SKP",	SKP_Handler,	0xE09E,	0xF0FF,	ToString_NAME_Vx								},
+	{ "SKNP",	SKNP_Handler,	0xE0A1,	0xF0FF,	ToString_NAME_Vx								},
+	{ "LD",		LD_3_Handler,	0xF007,	0xF0FF,	std::bind(ToString_NAME_Vx_src, _1, _2, "DT")	},
+	{ "LD",		LD_4_Handler,	0xF00A,	0xF0FF,	std::bind(ToString_NAME_Vx_src, _1, _2, "K")	},
+	{ "LD",		LD_5_Handler,	0xF015,	0xF0FF,	std::bind(ToString_NAME_dst_Vx, _1, _2, "DT")	},
+	{ "LD",		LD_6_Handler,	0xF018,	0xF0FF,	std::bind(ToString_NAME_dst_Vx, _1, _2, "ST")	},
+	{ "ADD",	ADD_I_Handler,	0xF01E,	0xF0FF,	std::bind(ToString_NAME_dst_Vx, _1, _2, "I")	},
+	{ "LD",		LD_7_Handler,	0xF029,	0xF0FF,	std::bind(ToString_NAME_dst_Vx, _1, _2, "F")	},
+	{ "LD",		LD_8_Handler,	0xF033,	0xF0FF,	std::bind(ToString_NAME_dst_Vx, _1, _2, "B")	},
+	{ "LD",		LD_9_Handler,	0xF055,	0xF0FF,	std::bind(ToString_NAME_dst_Vx, _1, _2, "[I]")	},
+	{ "LD",		LD_10_Handler,	0xF065,	0xF0FF,	std::bind(ToString_NAME_Vx_src, _1, _2, "[I]")	},
 };
