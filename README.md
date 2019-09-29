@@ -20,27 +20,27 @@ A Chip-8 interpreter written in C++17.
 
 1. Install [vcpkg](https://github.com/Microsoft/vcpkg):
 
-```powershell
-PS> git clone https://github.com/microsoft/vcpkg.git
-PS> cd vcpkg
-PS> .\bootstrap-vcpkg.bat
-```
+    ```powershell
+    PS> git clone https://github.com/microsoft/vcpkg.git
+    PS> cd vcpkg
+    PS> .\bootstrap-vcpkg.bat
+    ```
 
 1. Hook up user-wide integration:
 
-```powershell
-PS> .\vcpkg integrate install
-```
+    ```powershell
+    PS> .\vcpkg integrate install
+    ```
 
 1. Install the dependencies:
 
-```powershell
-PS> .\vcpkg install imgui:x64-windows-static
-PS> .\vcpkg install gl3w:x64-windows-static
-PS> .\vcpkg install ms-gsl:x64-windows-static
-PS> .\vcpkg install sdl2:x64-windows-static
-PS> .\vcpkg install tclap:x64-windows-static
-```
+    ```powershell
+    PS> .\vcpkg install imgui:x64-windows-static
+    PS> .\vcpkg install gl3w:x64-windows-static
+    PS> .\vcpkg install ms-gsl:x64-windows-static
+    PS> .\vcpkg install sdl2:x64-windows-static
+    PS> .\vcpkg install tclap:x64-windows-static
+    ```
 
 1. Open [chip8-interpreter.sln](src/chip8-interpreter.sln) in Visual Studio and build the project.
 
