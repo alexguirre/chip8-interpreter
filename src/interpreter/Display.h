@@ -9,6 +9,8 @@ class CDisplay
 public:
 	static constexpr std::size_t ResolutionWidth{ 64 };
 	static constexpr std::size_t ResolutionHeight{ 32 };
+	static constexpr std::size_t DefaultWindowWidth{ ResolutionWidth * 15 };
+	static constexpr std::size_t DefaultWindowHeight{ ResolutionHeight * 15 };
 	
 	using PixelBuffer = std::array<std::uint8_t, (ResolutionWidth * ResolutionHeight)>;
 	static constexpr std::size_t PixelBufferCount{ 3 }; // Number of pixel buffers, >1 to reduce flickering

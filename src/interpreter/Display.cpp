@@ -7,7 +7,7 @@ CDisplay::CDisplay()
 	mWindow = SDL_CreateWindow(
 		"chip8-interpreter",
 		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-		ResolutionWidth * 15, ResolutionHeight * 15,
+		DefaultWindowWidth, DefaultWindowHeight,
 		SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
 	);
 
@@ -25,6 +25,8 @@ CDisplay::CDisplay()
 	{
 		throw std::runtime_error("Failed to create renderer: " + std::string(SDL_GetError()));
 	}
+
+	SDL_RenderSetLogicalSize(mRenderer, ResolutionWidth, ResolutionHeight);
 }
 
 CDisplay::~CDisplay()
@@ -47,12 +49,6 @@ void CDisplay::Render()
 		std::get<2>(BackColor), std::get<3>(BackColor));
 	SDL_RenderClear(mRenderer);
 
-	int w, h;
-	SDL_GetWindowSize(mWindow, &w, &h);
-
-	const std::int32_t pixelW = w / ResolutionWidth;
-	const std::int32_t pixelH = h / ResolutionHeight;
-
 	constexpr std::size_t MaxRects{ ResolutionWidth * ResolutionHeight };
 	std::array<SDL_Rect, MaxRects> rects;
 	std::size_t rectCount = 0;
@@ -70,8 +66,7 @@ void CDisplay::Render()
 				}))
 			{
 				rects[rectCount++] = {
-					x * pixelW, y * pixelH,
-					pixelW, pixelH
+					x, y, 1, 1
 				};
 			}
 		}
