@@ -8,7 +8,7 @@ A Chip-8 interpreter written in C++17.
 
 ## Dependencies
 
-- [dear imgui](https://github.com/dmatlack/chip8)
+- [dear imgui](https://github.com/ocornut/imgui)
 - [gl3w](https://github.com/skaslev/gl3w)
 - [ms-gsl](https://github.com/Microsoft/GSL)
 - [SDL2](https://www.libsdl.org/download-2.0.php)
