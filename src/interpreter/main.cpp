@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <thread>
+#include <optional>
 #include <tclap/CmdLine.h>
 #include <gsl/gsl_util>
 #include "Interpreter.h"
@@ -10,8 +11,10 @@ int main(int argc, char* argv[])
 {
 	TCLAP::CmdLine cmd("Chip-8 interpreter", ' ', "WIP");
 	TCLAP::UnlabeledValueArg<std::string> inputArg("input_file", "Specifies the filename of the program ROM.", true, "", "input_file");
+	TCLAP::SwitchArg debuggerArg("d", "debugger", "Specifies whether to open the debugger GUI.", false);
 
 	cmd.add(inputArg);
+	cmd.add(debuggerArg);
 
 	cmd.parse(argc, argv);
 
@@ -22,9 +25,15 @@ int main(int argc, char* argv[])
 	{
 		CInterpreter interpreter;
 		interpreter.LoadProgram(inputArg.getValue());
-		interpreter.Pause(true);
 
-		CInterpreterDebugger debugger{ interpreter };
+		std::optional<CInterpreterDebugger> debugger{ std::nullopt };
+		if (debuggerArg.getValue())
+		{
+			debugger.emplace(interpreter);
+
+			// if the debugger GUI is shown, pause the program execution until the user starts it
+			interpreter.Pause(true);
+		}
 
 		bool quit = false;
 
@@ -68,10 +77,16 @@ int main(int argc, char* argv[])
 					interpreter.Pause(false);
 				}
 
-				debugger.ProcessEvent(e);
+				if (debugger.has_value())
+				{
+					debugger->ProcessEvent(e);
+				}
 			}
 
-			debugger.Render();
+			if (debugger.has_value())
+			{
+				debugger->Render();
+			}
 			interpreter.RenderDisplay();
 		}
 
