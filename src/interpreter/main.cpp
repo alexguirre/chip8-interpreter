@@ -90,7 +90,10 @@ int main(int argc, char* argv[])
 			interpreter.RenderDisplay();
 		}
 
-		interpreterThread.join();
+		if (interpreterThread.joinable())
+		{
+			interpreterThread.join();
+		}
 	}
 	catch (const std::exception& e)
 	{
