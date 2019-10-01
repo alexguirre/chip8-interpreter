@@ -79,7 +79,7 @@ void CInterpreter::DoCycle()
 	SContext& c = mContext;
 
 	// fetch
-	std::uint16_t opcode = c.Memory[c.PC] << 8 | c.Memory[c.PC + 1];
+	const std::uint16_t opcode = c.Memory[c.PC] << 8 | c.Memory[c.PC + std::size_t{ 1 }];
 	c.IR = opcode;
 
 	// move to next instruction

@@ -144,15 +144,15 @@ static void Handler_XOR_Vx_Vy(SContext& c)
 static void Handler_ADD_Vx_Vy(SContext& c)
 {
 	std::uint8_t& vx = c.V[c.X()];
-	std::uint8_t& vy = c.V[c.Y()];
-	c.V[0xF] = static_cast<std::int32_t>(vx) + static_cast<std::int32_t>(vy) > std::numeric_limits<std::uint8_t>::max();
+	const std::uint8_t vy = c.V[c.Y()];
+	c.V[0xF] = (vx + vy) > std::numeric_limits<std::uint8_t>::max();
 	vx += vy;
 }
 
 static void Handler_SUB_Vx_Vy(SContext& c)
 {
 	std::uint8_t& vx = c.V[c.X()];
-	std::uint8_t& vy = c.V[c.Y()];
+	const std::uint8_t vy = c.V[c.Y()];
 	c.V[0xF] = vx > vy;
 	vx -= vy;
 }
@@ -167,7 +167,7 @@ static void Handler_SHR_Vx(SContext& c)
 static void Handler_SUBN_Vx_Vy(SContext& c)
 {
 	std::uint8_t& vx = c.V[c.X()];
-	std::uint8_t& vy = c.V[c.Y()];
+	const std::uint8_t vy = c.V[c.Y()];
 	c.V[0xF] = vy > vx;
 	vx = vy - vx;
 }
@@ -204,26 +204,26 @@ static void Handler_RND_Vx_kk(SContext& c)
 		std::numeric_limits<std::uint8_t>::min(), std::numeric_limits<std::uint8_t>::max()
 	};
 
-	std::uint8_t rnd = static_cast<std::uint8_t>(dist(gen));
+	const std::uint8_t rnd = gsl::narrow<std::uint8_t>(dist(gen));
 	c.V[c.X()] = rnd & c.KK();
 }
 
 static void Handler_DRW_Vx_Vy_n(SContext& c)
 {
-	std::uint8_t vx = c.V[c.X()];
-	std::uint8_t vy = c.V[c.Y()];
-	std::uint8_t n = c.N();
+	const std::uint8_t vx = c.V[c.X()];
+	const std::uint8_t vy = c.V[c.Y()];
+	const std::uint8_t n = c.N();
 
 	c.V[0xF] = 0; // collision flag to 0
-	for (std::uint8_t byteIndex = 0; byteIndex < n; byteIndex++)
+	for (std::size_t byteIndex = 0; byteIndex < n; byteIndex++)
 	{
-		std::uint8_t byte = c.Memory[c.I + byteIndex];
+		const std::uint8_t byte = c.Memory[c.I + byteIndex];
 
-		for (std::uint8_t bitIndex = 0; bitIndex < 8; bitIndex++)
+		for (std::size_t bitIndex = 0; bitIndex < 8; bitIndex++)
 		{
-			std::uint8_t bit = (byte >> (7 - bitIndex)) & 1;
-			std::size_t x = (vx + bitIndex) % CDisplay::ResolutionWidth;
-			std::size_t y = (vy + byteIndex) % CDisplay::ResolutionHeight;
+			const std::uint8_t bit = (byte >> (7 - bitIndex)) & 1;
+			const std::size_t x = (vx + bitIndex) % CDisplay::ResolutionWidth;
+			const std::size_t y = (vy + byteIndex) % CDisplay::ResolutionHeight;
 			std::uint8_t& pixel = c.PixelBuffer[x + y * CDisplay::ResolutionWidth];
 
 			// collision
@@ -240,7 +240,7 @@ static void Handler_DRW_Vx_Vy_n(SContext& c)
 
 static void Handler_SKP_Vx(SContext& c)
 {
-	std::uint8_t vx = c.V[c.X()];
+	const std::uint8_t vx = c.V[c.X()];
 	if (c.Keyboard[vx])
 	{
 		c.PC += CInterpreter::InstructionByteSize;
@@ -249,7 +249,7 @@ static void Handler_SKP_Vx(SContext& c)
 
 static void Handler_SKNP_Vx(SContext& c)
 {
-	std::uint8_t vx = c.V[c.X()];
+	const std::uint8_t vx = c.V[c.X()];
 	if (!c.Keyboard[vx])
 	{
 		c.PC += CInterpreter::InstructionByteSize;
@@ -288,8 +288,8 @@ static void Handler_LD_ST_Vx(SContext& c)
 
 static void Handler_ADD_I_Vx(SContext& c)
 {
-	std::uint8_t& vx = c.V[c.X()];
-	c.V[0xF] = static_cast<std::int32_t>(vx) + static_cast<std::int32_t>(c.I) > std::numeric_limits<std::uint8_t>::max();
+	const std::uint8_t vx = c.V[c.X()];
+	c.V[0xF] = (vx + c.I) > std::numeric_limits<std::uint8_t>::max();
 	c.I += vx;
 }
 
@@ -300,20 +300,20 @@ static void Handler_LD_F_Vx(SContext& c)
 
 static void Handler_LD_B_Vx(SContext& c)
 {
-	std::uint8_t vx = c.V[c.X()];
-	std::uint8_t ones = vx % 10;
-	std::uint8_t tens = (vx / 10) % 10;
-	std::uint8_t hundreds = (vx / 100) % 10;
+	const std::uint8_t vx = c.V[c.X()];
+	const std::uint8_t ones = vx % 10;
+	const std::uint8_t tens = (vx / 10) % 10;
+	const std::uint8_t hundreds = (vx / 100) % 10;
 
-	c.Memory[c.I + 0] = hundreds;
-	c.Memory[c.I + 1] = tens;
-	c.Memory[c.I + 2] = ones;
+	c.Memory[c.I + std::size_t{ 0 }] = hundreds;
+	c.Memory[c.I + std::size_t{ 1 }] = tens;
+	c.Memory[c.I + std::size_t{ 2 }] = ones;
 }
 
 static void Handler_LD_derefI_Vx(SContext& c)
 {
-	std::uint8_t x = c.X();
-	for (std::uint8_t i = 0; i <= x; i++)
+	const std::uint8_t x = c.X();
+	for (std::size_t i = 0; i <= x; i++)
 	{
 		c.Memory[c.I + i] = c.V[i];
 	}
@@ -322,8 +322,8 @@ static void Handler_LD_derefI_Vx(SContext& c)
 
 static void Handler_LD_Vx_derefI(SContext& c)
 {
-	std::uint8_t x = c.X();
-	for (std::uint8_t i = 0; i <= x; i++)
+	const std::uint8_t x = c.X();
+	for (std::size_t i = 0; i <= x; i++)
 	{
 		c.V[i] = c.Memory[c.I + i];
 	}
