@@ -24,8 +24,9 @@ jobs:
           .\vcpkg install tclap:x64-windows-static
       - name: CMake
         run: |
-          mkdir src/build
-          cd src/build
+          cd src
+          mkdir build
+          cd build
           cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_TOOLCHAIN_FILE="..\..\vcpkg\scripts\buildsystems\vcpkg.cmake" -G "Visual Studio 16 2019" ..
       - name: Build Debug
         run: |
