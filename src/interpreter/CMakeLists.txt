@@ -4,12 +4,12 @@ if (WIN32)
     add_compile_definitions(NOMINMAX)
 endif()
 
-find_package(IMGUI REQUIRED)
+find_package(IMGUI CONFIG REQUIRED)
 if(NOT IMGUI_FOUND)
     message(ERROR "IMGUI not found")
 endif()
 
-find_package(GL3W REQUIRED)
+find_package(GL3W CONFIG REQUIRED)
 if(NOT GL3W_FOUND)
     message(ERROR "GL3W not found")
 endif()
@@ -21,7 +21,7 @@ else()
     include_directories(${MSGSL_INCLUDE_DIR})
 endif()
 
-find_package(SDL2 REQUIRED)
+find_package(SDL2 CONFIG REQUIRED)
 if(NOT SDL2_FOUND)
     message(ERROR "SDL2 not found")
 endif()
@@ -63,19 +63,19 @@ set_target_properties(c8-interpreter PROPERTIES
 add_dependencies(c8-interpreter
     imgui::imgui
     unofficial::gl3w::gl3w
-    SDL2::SDL2
     SDL2::SDL2main
+    SDL2::SDL2-static
 )
 
 target_link_libraries(c8-interpreter PRIVATE
     imgui::imgui
     unofficial::gl3w::gl3w
-    SDL2::SDL2
     SDL2::SDL2main
+    SDL2::SDL2-static
 )
 
 if(MSVC)
-    target_compile_options(c8-interpreter PRIVATE /W4 /WX)
+    target_compile_options(c8-interpreter PRIVATE /W4 /WX "$<IF:$<CONFIG:Debug>,/MTd,/MT>")
 else()
     target_compile_options(c8-interpreter PRIVATE -Wall -Wextra -pedantic -Werror)
 endif()
