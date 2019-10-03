@@ -13,11 +13,7 @@ jobs:
         run: |
           git clone https://github.com/microsoft/vcpkg.git
           cd vcpkg
-          .\bootstrap-vcpkg.bat          
-      - name: Integrate vcpkg
-        run: |
-          cd vcpkg
-          .\vcpkg integrate install
+          .\bootstrap-vcpkg.bat
       - name: Install dependencies
         run: |
           cd vcpkg
@@ -28,15 +24,14 @@ jobs:
           .\vcpkg install tclap:x64-windows-static
       - name: CMake
         run: |
-          cd src
-          mkdir build
-          cd build
+          mkdir src/build
+          cd src/build
           cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_TOOLCHAIN_FILE="..\..\vcpkg\scripts\buildsystems\vcpkg.cmake" -G "Visual Studio 16 2019" ..
       - name: Build Debug
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          devenv src/build/interpreter/c8-interpreter.vcxproj /Build Debug
+          cd src/build
+          cmake --build . --config Debug
       - name: Build Release
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          devenv src/build/interpreter/c8-interpreter.vcxproj /Build Release
+          cd src/build
+          cmake --build . --config Release
