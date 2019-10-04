@@ -58,9 +58,10 @@ jobs:
           ./vcpkg install tclap:x64-linux
       - name: Install dependencies failed
         if: failure()
-        run: |
-          cat /home/runner/work/chip8-interpreter/chip8-interpreter/vcpkg/buildtrees/gl3w/config-x64-linux-dbg-out.log
-          cat /home/runner/work/chip8-interpreter/chip8-interpreter/vcpkg/buildtrees/gl3w/config-x64-linux-dbg-out.log
+        uses: actions/upload-artifact@v1
+        with:
+          name: gl3w-files
+          path: /home/runner/work/chip8-interpreter/chip8-interpreter/vcpkg/buildtrees/gl3w/
       - name: CMake
         run: |
           cd src
