@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.12)
 
 if (WIN32)
     add_compile_definitions(NOMINMAX)
