@@ -56,6 +56,11 @@ jobs:
           ./vcpkg install ms-gsl:x64-linux
           ./vcpkg install sdl2:x64-linux
           ./vcpkg install tclap:x64-linux
+      - name: Install dependencies failed
+        if: failure()
+        run: |
+          cat /home/runner/work/chip8-interpreter/chip8-interpreter/vcpkg/buildtrees/gl3w/config-x64-linux-dbg-out.log
+          cat /home/runner/work/chip8-interpreter/chip8-interpreter/vcpkg/buildtrees/gl3w/config-x64-linux-dbg-out.log
       - name: CMake
         run: |
           cd src
