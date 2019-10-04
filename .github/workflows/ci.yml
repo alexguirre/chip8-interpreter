@@ -3,9 +3,9 @@ name: CI
 on: [push]
 
 jobs:
-  build:
-
-    runs-on: windows-latest
+  windows-build:
+    name: Windows Build
+    runs-on: windows-2019
     
     steps:
       - uses: actions/checkout@v1
@@ -28,6 +28,40 @@ jobs:
           mkdir build
           cd build
           cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_TOOLCHAIN_FILE="..\..\vcpkg\scripts\buildsystems\vcpkg.cmake" -G "Visual Studio 16 2019" ..
+      - name: Build Debug
+        run: |
+          cd src/build
+          cmake --build . --config Debug
+      - name: Build Release
+        run: |
+          cd src/build
+          cmake --build . --config Release
+
+  linux-build:
+    name: Linux Build
+    runs-on: ubuntu-18.04
+    
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          cd vcpkg
+          ./bootstrap-vcpkg.sh
+      - name: Install dependencies
+        run: |
+          cd vcpkg
+          ./vcpkg install imgui:x64-linux
+          ./vcpkg install gl3w:x64-linux
+          ./vcpkg install ms-gsl:x64-linux
+          ./vcpkg install sdl2:x64-linux
+          ./vcpkg install tclap:x64-linux
+      - name: CMake
+        run: |
+          cd src
+          mkdir build
+          cd build
+          cmake -DVCPKG_TARGET_TRIPLET=x64-linux -DCMAKE_TOOLCHAIN_FILE="../../vcpkg/scripts/buildsystems/vcpkg.cmake" ..
       - name: Build Debug
         run: |
           cd src/build
