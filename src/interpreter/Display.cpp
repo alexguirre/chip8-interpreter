@@ -1,5 +1,6 @@
 #include "Display.h"
 #include <stdexcept>
+#include <algorithm>
 
 CDisplay::CDisplay()
 	: mPixelBuffers{}, mNextPixelBuffer{ 0 }
