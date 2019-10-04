@@ -233,10 +233,12 @@ private:
 				Cursors[ImGuiMouseCursor_Hand] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
 			});
 
+#ifdef _WIN32
 		SDL_SysWMinfo wmInfo;
 		SDL_VERSION(&wmInfo.version);
 		SDL_GetWindowWMInfo(Window, &wmInfo);
 		io.ImeWindowHandle = wmInfo.info.win.window;
+#endif
 	}
 
 	void InitOpenGL()
@@ -367,7 +369,6 @@ private:
 		glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &lastVertexArray);
 #endif
 
-		constexpr std::int32_t GlslVersion = 130;
 		constexpr const GLchar* GlslVersionStr = "#version 130\n";
 		constexpr const GLchar* VertexShaderSrc =
 			"uniform mat4 ProjMtx;\n"
