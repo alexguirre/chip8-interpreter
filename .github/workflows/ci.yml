@@ -48,6 +48,8 @@ jobs:
           git clone https://github.com/microsoft/vcpkg.git
           cd vcpkg
           ./bootstrap-vcpkg.sh
+      - name: Install OpenGL
+        run: sudo apt-get install libglu1-mesa-dev
       - name: Install dependencies
         run: |
           cd vcpkg
