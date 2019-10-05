@@ -14,44 +14,59 @@ A Chip-8 interpreter written in C++17.
 - [SDL2](https://www.libsdl.org/download-2.0.php)
 - [TCLAP](http://tclap.sourceforge.net/)
 
-## Building
+## Quick Start
 
-### Windows / Visual Studio / vcpkg
+Prerequisites:
+
+- Windows 10 or Linux
+- Visual Studio 2019 (on Windows)
+- Git
+- CMake 3.12.4 or newer
+
+On Windows, enter the [Visual Studio development environment](https://docs.microsoft.com/en-us/cpp/build/building-on-the-command-line?view=vs-2019) with x64 native tools to get access to the CMake version included with Visual Studio.
 
 1. Install [vcpkg](https://github.com/Microsoft/vcpkg):
 
-    ```powershell
-    PS> git clone https://github.com/microsoft/vcpkg.git
-    PS> cd vcpkg
+    ```console
+    > git clone https://github.com/microsoft/vcpkg.git
+    > cd vcpkg
     PS> .\bootstrap-vcpkg.bat
-    ```
-
-1. Hook up user-wide integration:
-
-    ```powershell
-    PS> .\vcpkg integrate install
+    $ ./bootstrap-vcpkg.sh
     ```
 
 1. Install the dependencies:
 
-    ```powershell
-    PS> .\vcpkg install imgui:x64-windows-static
-    PS> .\vcpkg install gl3w:x64-windows-static
-    PS> .\vcpkg install ms-gsl:x64-windows-static
-    PS> .\vcpkg install sdl2:x64-windows-static
-    PS> .\vcpkg install tclap:x64-windows-static
+    ```console
+    PS> .\vcpkg --triplet x64-windows-static install imgui gl3w ms-gsl sdl2 tclap
+    $ ./vcpkg --triplet x64-linux install imgui gl3w ms-gsl sdl2 tclap
+    > cd ..
     ```
 
-1. Open [chip8-interpreter.sln](src/chip8-interpreter.sln) in Visual Studio and build the project.
+1. Run CMake:
 
-### Linux
+    ```console
+    PS> mkdir src\build
+    PS> cd src\build
+    PS> cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_TOOLCHAIN_FILE="..\..\vcpkg\scripts\buildsystems\vcpkg.cmake" ..
+    $ mkdir src/build
+    $ cd src/build
+    $ cmake -DVCPKG_TARGET_TRIPLET=x64-linux -DCMAKE_TOOLCHAIN_FILE="../../vcpkg/scripts/buildsystems/vcpkg.cmake" ..
+    ```
 
-TBD
+1. Build:
+
+    ```console
+    > cmake --build . --config Release
+    ```
+
+1. Compiled binaries will be in `src/build/bin`.
 
 ## Usage
 
+Run `c8-interpreter` with the argument `--help` to see usage help.
+
 ```console
-.\c8-interpreter path\to\rom
+> ./c8-interpreter --help
 ```
 
 ## References
