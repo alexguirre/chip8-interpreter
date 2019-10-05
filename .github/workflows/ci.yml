@@ -17,17 +17,13 @@ jobs:
       - name: Install dependencies
         run: |
           cd vcpkg
-          .\vcpkg install imgui:x64-windows-static
-          .\vcpkg install gl3w:x64-windows-static
-          .\vcpkg install ms-gsl:x64-windows-static
-          .\vcpkg install sdl2:x64-windows-static
-          .\vcpkg install tclap:x64-windows-static
+          .\vcpkg --triplet x64-windows-static install imgui gl3w ms-gsl sdl2 tclap
       - name: CMake
         run: |
           cd src
           mkdir build
           cd build
-          cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_TOOLCHAIN_FILE="..\..\vcpkg\scripts\buildsystems\vcpkg.cmake" -G "Visual Studio 16 2019" ..
+          cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_TOOLCHAIN_FILE="..\..\vcpkg\scripts\buildsystems\vcpkg.cmake" ..
       - name: Build Debug
         run: |
           cd src/build
@@ -60,11 +56,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd vcpkg
-          ./vcpkg install imgui:x64-linux
-          ./vcpkg install gl3w:x64-linux
-          ./vcpkg install ms-gsl:x64-linux
-          ./vcpkg install sdl2:x64-linux
-          ./vcpkg install tclap:x64-linux
+          ./vcpkg --triplet x64-linux install imgui gl3w ms-gsl sdl2 tclap
       - name: CMake
         run: |
           cd src
