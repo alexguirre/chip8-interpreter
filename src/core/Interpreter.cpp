@@ -36,7 +36,7 @@ namespace c8
 	}
 
 	CInterpreter::CInterpreter()
-		: mContext{}
+		: mContext{}, mPaused{ false }
 	{
 	}
 
