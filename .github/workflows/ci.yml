@@ -3,9 +3,9 @@ name: CI
 on: [push]
 
 jobs:
-  build:
-
-    runs-on: windows-latest
+  windows-build:
+    name: Windows Build
+    runs-on: windows-2019
     
     steps:
       - uses: actions/checkout@v1
@@ -13,24 +13,61 @@ jobs:
         run: |
           git clone https://github.com/microsoft/vcpkg.git
           cd vcpkg
-          .\bootstrap-vcpkg.bat          
-      - name: Integrate vcpkg
-        run: |
-          cd vcpkg
-          .\vcpkg integrate install
+          .\bootstrap-vcpkg.bat
       - name: Install dependencies
         run: |
           cd vcpkg
-          .\vcpkg install imgui:x64-windows-static
-          .\vcpkg install gl3w:x64-windows-static
-          .\vcpkg install ms-gsl:x64-windows-static
-          .\vcpkg install sdl2:x64-windows-static
-          .\vcpkg install tclap:x64-windows-static
+          .\vcpkg --triplet x64-windows-static install imgui gl3w ms-gsl sdl2 tclap
+      - name: CMake
+        run: |
+          cd src
+          mkdir build
+          cd build
+          cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_TOOLCHAIN_FILE="..\..\vcpkg\scripts\buildsystems\vcpkg.cmake" ..
       - name: Build Debug
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          devenv src/chip8-interpreter.sln /Build Debug
+          cd src/build
+          cmake --build . --config Debug
       - name: Build Release
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          devenv src/chip8-interpreter.sln /Build Release
+          cd src/build
+          cmake --build . --config Release
+
+  linux-build:
+    name: Linux Build
+    runs-on: ubuntu-18.04
+    
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          cd vcpkg
+          ./bootstrap-vcpkg.sh
+      - name: Install OpenGL
+        run: sudo apt-get install libglu1-mesa-dev
+      - name: Install GCC 9
+        run: | # based on: https://github.com/ArkEcosystem/cpp-crypto/blob/b05116d6ab4ffe50cad53a49ca33e95ec505064f/.github/workflows/test.yml#L46
+          sudo apt-add-repository -y ppa:ubuntu-toolchain-r/test
+          sudo apt-get update
+          sudo apt-get -y install g++-9 gcc-9
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-9
+          sudo update-alternatives --config gcc
+      - name: Install dependencies
+        run: |
+          cd vcpkg
+          ./vcpkg --triplet x64-linux install imgui gl3w ms-gsl sdl2 tclap
+      - name: CMake
+        run: |
+          cd src
+          mkdir build
+          cd build
+          cmake -DVCPKG_TARGET_TRIPLET=x64-linux -DCMAKE_TOOLCHAIN_FILE="../../vcpkg/scripts/buildsystems/vcpkg.cmake" ..
+      - name: Build Debug
+        run: |
+          cd src/build
+          cmake --build . --config Debug
+      - name: Build Release
+        run: |
+          cd src/build
+          cmake --build . --config Release

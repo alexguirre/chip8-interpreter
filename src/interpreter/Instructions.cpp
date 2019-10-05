@@ -1,6 +1,7 @@
 #include "Instructions.h"
 #include <sstream>
 #include <random>
+#include <iomanip>
 #include "Interpreter.h"
 
 static std::string ToString_NAME(const SInstruction& i, const SContext&)

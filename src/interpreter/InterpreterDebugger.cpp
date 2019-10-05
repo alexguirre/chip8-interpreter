@@ -1,6 +1,7 @@
 #include "InterpreterDebugger.h"
 #include <imgui.h>
 #include <mutex>
+#include <gsl/gsl_util>
 #include "Icons.h"
 
 static const ImVec4 SubtitleColor{ 0.1f, 0.8f, 0.05f, 1.0f };
@@ -90,10 +91,12 @@ void CInterpreterDebugger::DrawRegisters()
 		ImGui::Columns(4);
 		for (std::size_t i = 0; i < c.V.size() / 4; i++)
 		{
-			ImGui::Text("V%X:  %02X", i + 4 * 0, c.V[i + 4 * 0]); ImGui::NextColumn();
-			ImGui::Text("V%X:  %02X", i + 4 * 1, c.V[i + 4 * 1]); ImGui::NextColumn();
-			ImGui::Text("V%X:  %02X", i + 4 * 2, c.V[i + 4 * 2]); ImGui::NextColumn();
-			ImGui::Text("V%X:  %02X", i + 4 * 3, c.V[i + 4 * 3]); ImGui::NextColumn();
+			constexpr std::size_t RegistersPerRow{ 4 };
+			for (std::size_t j = 0; j < RegistersPerRow; j++)
+			{
+				ImGui::Text("V%X:  %02X", gsl::narrow<std::uint32_t>(i + 4 * j), c.V[i + 4 * j]);
+				ImGui::NextColumn();
+			}
 		}
 		ImGui::Columns(1);
 	}
@@ -136,7 +139,7 @@ void CInterpreterDebugger::DrawStack()
 			ImGui::Separator();
 			for (std::size_t i = 0; i < c.Stack.size(); i++)
 			{
-				ImGui::Text("%04X", i); ImGui::NextColumn();
+				ImGui::Text("%04X", gsl::narrow<std::uint32_t>(i)); ImGui::NextColumn();
 				ImGui::Text("%04X", c.Stack[i]); ImGui::NextColumn();
 			}
 			ImGui::Columns(1);
@@ -169,15 +172,15 @@ void CInterpreterDebugger::DrawMemory()
 			ImGui::NextColumn();
 			ImGui::Separator();
 
-			constexpr std::int32_t BytesPerLine{ 8 };
-			constexpr std::int32_t LineTotalCount{ SContext::MemorySize / BytesPerLine };
-			ImGuiListClipper clipper(LineTotalCount);
+			constexpr std::size_t BytesPerLine{ 8 };
+			constexpr std::size_t LineTotalCount{ SContext::MemorySize / BytesPerLine };
+			ImGuiListClipper clipper(gsl::narrow<int>(LineTotalCount));
 			while (clipper.Step())
 			{
-				for (std::size_t i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+				for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
 				{
-					std::size_t addr = i * BytesPerLine;
-					ImGui::Text("%04X", addr);
+					const std::size_t addr = i * BytesPerLine;
+					ImGui::Text("%04X", gsl::narrow<std::uint32_t>(addr));
 					ImGui::NextColumn();
 
 					// draw bytes
@@ -259,8 +262,8 @@ void CInterpreterDebugger::DrawDisassembly()
 				ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(pos.x, 0.0f), ImVec2(pos.x + LeftGapWidth, std::numeric_limits<float>::max()), IM_COL32(50, 50, 50, 180));
 			}
 
-			constexpr std::int32_t BytesPerLine{ CInterpreter::InstructionByteSize };
-			constexpr std::int32_t LineTotalCount{ SContext::MemorySize / BytesPerLine };
+			constexpr std::size_t BytesPerLine{ CInterpreter::InstructionByteSize };
+			constexpr std::size_t LineTotalCount{ SContext::MemorySize / BytesPerLine };
 
 			// handle 'go to address' request
 			if (mDisassemblyGoToAddress != InvalidDisassemblyGoToAddress)
@@ -271,14 +274,14 @@ void CInterpreterDebugger::DrawDisassembly()
 				mDisassemblyGoToAddress = InvalidDisassemblyGoToAddress;
 			}
 
-			ImGuiListClipper clipper(LineTotalCount);
+			ImGuiListClipper clipper(gsl::narrow<int>(LineTotalCount));
 			while (clipper.Step())
 			{
-				for (std::size_t i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+				for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
 				{
 					ImGui::PushID(static_cast<int>(i));
 
-					std::size_t addr = i * BytesPerLine;
+					const std::size_t addr = i * BytesPerLine;
 
 					// highlight background if the breakpoint is set
 					if (mBreakpoints[i])
@@ -312,16 +315,16 @@ void CInterpreterDebugger::DrawDisassembly()
 
 					if (addr >= CInterpreter::ProgramStartAddress)
 					{
-						ImGui::Text("%04X: ", addr);
+						ImGui::Text("%04X: ", gsl::narrow<std::uint32_t>(addr));
 					}
 					else
 					{
-						ImGui::TextDisabled("%04X: ", addr);
+						ImGui::TextDisabled("%04X: ", gsl::narrow<std::uint32_t>(addr));
 					}
 					ImGui::SameLine();
 
 					std::uint16_t opcode = c.Memory[addr] << 8 | c.Memory[addr + 1];
-					contextCopy.PC = static_cast<std::uint16_t>(addr);
+					contextCopy.PC = gsl::narrow<std::uint16_t>(addr);
 					contextCopy.IR = opcode;
 
 					auto instOpt = mInterpreter.TryFindInstruction(opcode);
@@ -329,7 +332,7 @@ void CInterpreterDebugger::DrawDisassembly()
 					{
 						const SInstruction& inst = instOpt.value().get();
 						std::string instStr = inst.ToString(inst, contextCopy);
-						ImGui::Text(instStr.c_str());
+						ImGui::Text("%s", instStr.c_str());
 					}
 					else
 					{

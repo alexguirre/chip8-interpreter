@@ -1,5 +1,7 @@
 #include "Display.h"
 #include <stdexcept>
+#include <algorithm>
+#include <gsl/gsl_util>
 
 CDisplay::CDisplay()
 	: mPixelBuffers{}, mNextPixelBuffer{ 0 }
@@ -53,9 +55,9 @@ void CDisplay::Render()
 	std::array<SDL_Rect, MaxRects> rects;
 	std::size_t rectCount = 0;
 
-	for (std::int32_t y = 0; y < ResolutionHeight; y++)
+	for (std::size_t y = 0; y < ResolutionHeight; y++)
 	{
-		for (std::int32_t x = 0; x < ResolutionWidth; x++)
+		for (std::size_t x = 0; x < ResolutionWidth; x++)
 		{
 			const std::size_t pixelIndex = x + y * ResolutionWidth;
 			
@@ -66,7 +68,8 @@ void CDisplay::Render()
 				}))
 			{
 				rects[rectCount++] = {
-					x, y, 1, 1
+					gsl::narrow<int>(x), gsl::narrow<int>(y),
+					1, 1
 				};
 			}
 		}
