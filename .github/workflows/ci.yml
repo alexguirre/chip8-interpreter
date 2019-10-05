@@ -50,6 +50,13 @@ jobs:
           ./bootstrap-vcpkg.sh
       - name: Install OpenGL
         run: sudo apt-get install libglu1-mesa-dev
+      - name: Install GCC 8
+        run: | # based on: https://github.com/ArkEcosystem/cpp-crypto/blob/b05116d6ab4ffe50cad53a49ca33e95ec505064f/.github/workflows/test.yml#L46
+          sudo apt-add-repository -y ppa:ubuntu-toolchain-r/test
+          sudo apt-get update
+          sudo apt-get -y install g++-8 gcc-8
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 60 --slave /usr/bin/g++ g++ /usr/bin/g++-8
+          sudo update-alternatives --config gcc
       - name: Install dependencies
         run: |
           cd vcpkg
