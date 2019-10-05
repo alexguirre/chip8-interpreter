@@ -128,10 +128,10 @@ void CInterpreter::LoadProgram(const std::filesystem::path& filePath)
 
 	mContext.Reset();
 
-	std::basic_ifstream<std::uint8_t> file(filePath, std::ios::in | std::ios::binary);
+	std::ifstream file(filePath, std::ios::in | std::ios::binary);
 	std::copy(
 		std::istreambuf_iterator(file),
-		std::istreambuf_iterator<std::uint8_t>(),
+		std::istreambuf_iterator<char>(),
 		std::next(mContext.Memory.begin(), ProgramStartAddress)
 	);
 
