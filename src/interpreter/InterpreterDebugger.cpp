@@ -332,7 +332,7 @@ void CInterpreterDebugger::DrawDisassembly()
 					{
 						const SInstruction& inst = instOpt.value().get();
 						std::string instStr = inst.ToString(inst, contextCopy);
-						ImGui::Text(instStr.c_str());
+						ImGui::Text("%s", instStr.c_str());
 					}
 					else
 					{
