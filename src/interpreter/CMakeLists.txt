@@ -26,7 +26,7 @@ if(NOT SDL2_FOUND)
     message(ERROR "SDL2 not found")
 endif()
 
-find_path(TCLAP_INCLUDE_DIR gsl/gsl)
+find_path(TCLAP_INCLUDE_DIR tclap/CmdLine.h)
 if (TCLAP_INCLUDE_DIR STREQUAL TCLAP_INCLUDE_DIR-NOTFOUND)
     message(ERROR "TCLAP not found")
 else()
