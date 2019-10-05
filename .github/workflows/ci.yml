@@ -65,12 +65,6 @@ jobs:
           ./vcpkg install ms-gsl:x64-linux
           ./vcpkg install sdl2:x64-linux
           ./vcpkg install tclap:x64-linux
-      - name: Install dependencies failed
-        if: failure()
-        uses: actions/upload-artifact@v1
-        with:
-          name: gl3w-files
-          path: /home/runner/work/chip8-interpreter/chip8-interpreter/vcpkg/buildtrees/gl3w/
       - name: CMake
         run: |
           cd src
