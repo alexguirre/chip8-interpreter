@@ -12,6 +12,7 @@ else()
 endif()
 
 add_library(c8-core STATIC
+	"Constants.h"
     "Instructions.cpp"
     "Instructions.h"
     "Interpreter.cpp"
