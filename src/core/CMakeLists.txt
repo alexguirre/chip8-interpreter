@@ -12,11 +12,14 @@ else()
 endif()
 
 add_library(c8-core STATIC
-	"Constants.h"
+    "Constants.h"
+    "Context.cpp"
+    "Context.h"
     "Instructions.cpp"
     "Instructions.h"
     "Interpreter.cpp"
     "Interpreter.h"
+    "Platform.h"
 )
 
 set_target_properties(c8-core PROPERTIES

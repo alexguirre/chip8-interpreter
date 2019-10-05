@@ -12,31 +12,8 @@ namespace c8
 {
 	using namespace constants;
 
-	SContext::SContext()
-	{
-		Reset();
-	}
-
-	void SContext::Reset()
-	{
-		std::fill(V.begin(), V.end(), std::uint8_t(0));
-		I = 0;
-		PC = 0;
-		SP = 0;
-		DT = 0;
-		ST = 0;
-		IR = 0;
-		std::fill(Stack.begin(), Stack.end(), std::uint16_t(0));
-		std::fill(Memory.begin(), Memory.end(), std::uint8_t(0));
-		std::fill(PixelBuffer.begin(), PixelBuffer.end(), std::uint8_t(0));
-		PixelBufferDirty = true;
-		std::fill(Keyboard.begin(), Keyboard.end(), false);
-
-		std::copy(CInterpreter::Fontset.begin(), CInterpreter::Fontset.end(), Memory.begin());
-	}
-
-	CInterpreter::CInterpreter()
-		: mContext{}, mPaused{ false }
+	CInterpreter::CInterpreter(std::function<std::unique_ptr<CPlatform>()> createPlatform)
+		: mPlatform{ createPlatform() }, mContext{}, mPaused{ false }
 	{
 	}
 
@@ -55,7 +32,7 @@ namespace c8
 
 	void CInterpreter::Step()
 	{
-		// TODO: update mContext.Keyboard;
+		mPlatform->GetKeyboardState(mContext.Keyboard);
 
 		const auto now = Clock::now();
 
@@ -90,7 +67,7 @@ namespace c8
 		// update display
 		if (mContext.PixelBufferDirty)
 		{
-			// TODO: update real display pixel buffer
+			mPlatform->UpdateDisplay(mContext.PixelBuffer);
 			mContext.PixelBufferDirty = false;
 		}
 	}
@@ -114,7 +91,7 @@ namespace c8
 
 	void CInterpreter::DoBeep()
 	{
-		// TODO: DoBeep
+		mPlatform->Beep(BeepFrequency, BeepDuration);
 	}
 
 	void CInterpreter::LoadProgram(const std::filesystem::path& filePath)
@@ -215,24 +192,4 @@ namespace c8
 
 		return std::nullopt;
 	}
-
-	const std::array<std::uint8_t, FontsetTotalByteSize> CInterpreter::Fontset
-	{
-		0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
-		0x20, 0x60, 0x20, 0x20, 0x70, // 1
-		0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
-		0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
-		0x90, 0x90, 0xF0, 0x10, 0x10, // 4
-		0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
-		0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
-		0xF0, 0x10, 0x20, 0x40, 0x40, // 7
-		0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
-		0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
-		0xF0, 0x90, 0xF0, 0x90, 0x90, // A
-		0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
-		0xF0, 0x80, 0x80, 0x80, 0xF0, // C
-		0xE0, 0x90, 0x90, 0x90, 0xE0, // D
-		0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
-		0xF0, 0x80, 0xF0, 0x80, 0x80  // F
-	};
 }
