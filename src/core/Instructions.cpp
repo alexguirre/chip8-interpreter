@@ -381,7 +381,7 @@ namespace c8
 
 TEST_CASE("Instruction ToString")
 {
-	SInstruction i{ "A" };
+	SInstruction i{ "A", [](SContext&) {}, 0x0000, 0x0000, [](const SInstruction&, const SContext&) { return std::string{}; } };
 	SContext c{};
 
 	SUBCASE("NAME")
