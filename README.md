@@ -9,6 +9,7 @@ A Chip-8 interpreter written in C++17.
 ## Dependencies
 
 - [dear imgui](https://github.com/ocornut/imgui)
+- [doctest](https://github.com/onqtam/doctest)
 - [gl3w](https://github.com/skaslev/gl3w)
 - [ms-gsl](https://github.com/Microsoft/GSL)
 - [SDL2](https://www.libsdl.org/download-2.0.php)
@@ -37,8 +38,8 @@ On Windows, enter the [Visual Studio development environment](https://docs.micro
 1. Install the dependencies:
 
     ```console
-    PS> .\vcpkg --triplet x64-windows-static install imgui gl3w ms-gsl sdl2 tclap
-    $ ./vcpkg --triplet x64-linux install imgui gl3w ms-gsl sdl2 tclap
+    PS> .\vcpkg --triplet x64-windows-static install imgui doctest gl3w ms-gsl sdl2 tclap
+    $ ./vcpkg --triplet x64-linux install imgui doctest gl3w ms-gsl sdl2 tclap
     > cd ..
     ```
 
