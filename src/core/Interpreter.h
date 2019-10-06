@@ -18,14 +18,14 @@ namespace c8
 		using Clock = std::chrono::high_resolution_clock;
 
 	private:
-		std::unique_ptr<CPlatform> mPlatform;
+		std::shared_ptr<CPlatform> mPlatform;
 		SContext mContext;
 		Clock::time_point mLastCycleTime;
 		Clock::time_point mLastTimerTickTime;
 		bool mPaused;
 
 	public:
-		CInterpreter(std::function<std::unique_ptr<CPlatform>()> createPlatform);
+		CInterpreter(const std::shared_ptr<CPlatform>& platform);
 
 		CInterpreter(CInterpreter&&) = default;
 		CInterpreter& operator=(CInterpreter&&) = default;
