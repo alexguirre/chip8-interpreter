@@ -17,7 +17,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd vcpkg
-          .\vcpkg --triplet x64-windows-static install imgui gl3w ms-gsl sdl2 tclap
+          .\vcpkg --triplet x64-windows-static install imgui doctest gl3w ms-gsl sdl2 tclap
       - name: CMake
         run: |
           cd src
@@ -28,10 +28,18 @@ jobs:
         run: |
           cd src/build
           cmake --build . --config Debug
+      - name: Run Tests Debug
+        run: |
+          cd src/build/bin
+          .\c8-core-test
       - name: Build Release
         run: |
           cd src/build
           cmake --build . --config Release
+      - name: Run Tests Release
+        run: |
+          cd src/build/bin
+          .\c8-core-test
 
   linux-build:
     name: Linux Build
@@ -56,7 +64,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd vcpkg
-          ./vcpkg --triplet x64-linux install imgui gl3w ms-gsl sdl2 tclap
+          ./vcpkg --triplet x64-linux install imgui doctest gl3w ms-gsl sdl2 tclap
       - name: CMake
         run: |
           cd src
@@ -67,7 +75,15 @@ jobs:
         run: |
           cd src/build
           cmake --build . --config Debug
+      - name: Run Tests Debug
+        run: |
+          cd src/build/bin
+          ./c8-core-test
       - name: Build Release
         run: |
           cd src/build
           cmake --build . --config Release
+      - name: Run Tests Release
+        run: |
+          cd src/build/bin
+          ./c8-core-test
