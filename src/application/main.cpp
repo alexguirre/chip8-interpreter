@@ -4,8 +4,9 @@
 #include <optional>
 #include <tclap/CmdLine.h>
 #include <gsl/gsl_util>
-#include "Interpreter.h"
-#include "InterpreterDebugger.h
+#include <core/Interpreter.h>
+#include "AppPlatform.h"
+#include "InterpreterDebugger.h"
 
 int main(int argc, char* argv[])
 {
@@ -23,7 +24,8 @@ int main(int argc, char* argv[])
 
 	try
 	{
-		CInterpreter interpreter;
+		std::shared_ptr<CAppPlatform> platform = std::make_shared<CAppPlatform>();
+		c8::CInterpreter interpreter(platform);
 		interpreter.LoadProgram(inputArg.getValue());
 
 		std::optional<CInterpreterDebugger> debugger{ std::nullopt };
@@ -87,7 +89,7 @@ int main(int argc, char* argv[])
 			{
 				debugger->Render();
 			}
-			interpreter.RenderDisplay();
+			platform->Display().Render();
 		}
 
 		if (interpreterThread.joinable())

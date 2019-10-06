@@ -8,6 +8,9 @@ static const ImVec4 SubtitleColor{ 0.1f, 0.8f, 0.05f, 1.0f };
 
 // TODO: debugger GUI should resize to fit window
 
+using namespace c8;
+using namespace c8::constants;
+
 CInterpreterDebugger::CInterpreterDebugger(CInterpreter& interpreter)
 	: CImGuiWindow("chip8-interpreter: Debugger"), mInterpreter(interpreter), mFirstDraw{ true }, mBreakpoints{},
 	mDisassemblyGoToAddress{ InvalidDisassemblyGoToAddress }
@@ -173,7 +176,7 @@ void CInterpreterDebugger::DrawMemory()
 			ImGui::Separator();
 
 			constexpr std::size_t BytesPerLine{ 8 };
-			constexpr std::size_t LineTotalCount{ SContext::MemorySize / BytesPerLine };
+			constexpr std::size_t LineTotalCount{ MemorySize / BytesPerLine };
 			ImGuiListClipper clipper(gsl::narrow<int>(LineTotalCount));
 			while (clipper.Step())
 			{
@@ -262,8 +265,8 @@ void CInterpreterDebugger::DrawDisassembly()
 				ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(pos.x, 0.0f), ImVec2(pos.x + LeftGapWidth, std::numeric_limits<float>::max()), IM_COL32(50, 50, 50, 180));
 			}
 
-			constexpr std::size_t BytesPerLine{ CInterpreter::InstructionByteSize };
-			constexpr std::size_t LineTotalCount{ SContext::MemorySize / BytesPerLine };
+			constexpr std::size_t BytesPerLine{ InstructionByteSize };
+			constexpr std::size_t LineTotalCount{ MemorySize / BytesPerLine };
 
 			// handle 'go to address' request
 			if (mDisassemblyGoToAddress != InvalidDisassemblyGoToAddress)
@@ -313,7 +316,7 @@ void CInterpreterDebugger::DrawDisassembly()
 					}
 					ImGui::SameLine();
 
-					if (addr >= CInterpreter::ProgramStartAddress)
+					if (addr >= ProgramStartAddress)
 					{
 						ImGui::Text("%04X: ", gsl::narrow<std::uint32_t>(addr));
 					}

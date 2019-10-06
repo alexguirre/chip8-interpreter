@@ -3,16 +3,15 @@
 #include <cstdint>
 #include <array>
 #include <SDL2/SDL.h>
+#include <core/Constants.h>
+#include <core/Context.h>
 
 class CDisplay
 {
 public:
-	static constexpr std::size_t ResolutionWidth{ 64 };
-	static constexpr std::size_t ResolutionHeight{ 32 };
-	static constexpr std::size_t DefaultWindowWidth{ ResolutionWidth * 15 };
-	static constexpr std::size_t DefaultWindowHeight{ ResolutionHeight * 15 };
+	static constexpr std::size_t DefaultWindowWidth{ c8::constants::DisplayResolutionWidth * 15 };
+	static constexpr std::size_t DefaultWindowHeight{ c8::constants::DisplayResolutionHeight * 15 };
 	
-	using PixelBuffer = std::array<std::uint8_t, (ResolutionWidth * ResolutionHeight)>;
 	static constexpr std::size_t PixelBufferCount{ 3 }; // Number of pixel buffers, >1 to reduce flickering
 
 	using RGBA = std::tuple<std::uint8_t, std::uint8_t, std::uint8_t, std::uint8_t>;
@@ -22,7 +21,7 @@ public:
 private:
 	SDL_Window* mWindow;
 	SDL_Renderer* mRenderer;
-	std::array<PixelBuffer, PixelBufferCount> mPixelBuffers;
+	std::array<c8::SDisplayPixelBuffer, PixelBufferCount> mPixelBuffers;
 	std::size_t mNextPixelBuffer;
 
 public:
@@ -35,5 +34,5 @@ public:
 	CDisplay& operator=(CDisplay&&) = default;
 
 	void Render();
-	void UpdatePixelBuffer(const PixelBuffer& src);
+	void UpdatePixelBuffer(const c8::SDisplayPixelBuffer& src);
 };

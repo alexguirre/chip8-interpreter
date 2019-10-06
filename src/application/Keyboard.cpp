@@ -1,5 +1,6 @@
 #include "Keyboard.h"
 #include <stdexcept>
+#include <core/Constants.h>
 
 CKeyboard::CKeyboard()
 	: mState{SDL_GetKeyboardState(nullptr)}
@@ -16,9 +17,9 @@ bool CKeyboard::IsUp(std::uint8_t key) const
 	return !IsDown(key);
 }
 
-void CKeyboard::GetState(State& state) const
+void CKeyboard::GetState(c8::SKeyboardState& state) const
 {
-	for (std::uint8_t i = 0; i < NumberOfKeys; i++)
+	for (std::uint8_t i = 0; i < c8::constants::KeyboardKeyCount; i++)
 	{
 		state[i] = IsDown(i);
 	}

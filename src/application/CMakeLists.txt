@@ -5,6 +5,8 @@ if (WIN32)
 endif()
 
 add_executable(c8-application
+    "AppPlatform.cpp"
+    "AppPlatform.h"
     "Display.cpp"
     "Display.h"
     "Icons.h"

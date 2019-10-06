@@ -1,6 +1,6 @@
 #pragma once
 #include "ImGuiWindow.h"
-#include "Interpreter.h"
+#include <core/Interpreter.h>
 #include <array>
 
 class CInterpreterDebugger : public CImGuiWindow
@@ -8,13 +8,13 @@ class CInterpreterDebugger : public CImGuiWindow
 private:
 	static constexpr std::size_t InvalidDisassemblyGoToAddress = ~0u;
 
-	CInterpreter& mInterpreter;
+	c8::CInterpreter& mInterpreter;
 	bool mFirstDraw;
-	std::array<bool, (SContext::MemorySize / CInterpreter::InstructionByteSize)> mBreakpoints;
+	std::array<bool, (c8::constants::MemorySize / c8::constants::InstructionByteSize)> mBreakpoints;
 	std::size_t mDisassemblyGoToAddress;
 
 public:
-	CInterpreterDebugger(CInterpreter& interpreter);
+	CInterpreterDebugger(c8::CInterpreter& interpreter);
 
 	void Draw() override;
 

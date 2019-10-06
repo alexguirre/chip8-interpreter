@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <gsl/gsl_util>
 
+using namespace c8::constants;
+
 CDisplay::CDisplay()
 	: mPixelBuffers{}, mNextPixelBuffer{ 0 }
 {
@@ -28,7 +30,7 @@ CDisplay::CDisplay()
 		throw std::runtime_error("Failed to create renderer: " + std::string(SDL_GetError()));
 	}
 
-	SDL_RenderSetLogicalSize(mRenderer, ResolutionWidth, ResolutionHeight);
+	SDL_RenderSetLogicalSize(mRenderer, DisplayResolutionWidth, DisplayResolutionHeight);
 }
 
 CDisplay::~CDisplay()
@@ -51,15 +53,15 @@ void CDisplay::Render()
 		std::get<2>(BackColor), std::get<3>(BackColor));
 	SDL_RenderClear(mRenderer);
 
-	constexpr std::size_t MaxRects{ ResolutionWidth * ResolutionHeight };
+	constexpr std::size_t MaxRects{  DisplayResolutionWidth * DisplayResolutionHeight };
 	std::array<SDL_Rect, MaxRects> rects;
 	std::size_t rectCount = 0;
 
-	for (std::size_t y = 0; y < ResolutionHeight; y++)
+	for (std::size_t y = 0; y < DisplayResolutionHeight; y++)
 	{
-		for (std::size_t x = 0; x < ResolutionWidth; x++)
+		for (std::size_t x = 0; x < DisplayResolutionWidth; x++)
 		{
-			const std::size_t pixelIndex = x + y * ResolutionWidth;
+			const std::size_t pixelIndex = x + y * DisplayResolutionWidth;
 			
 			// check if the pixel is set in any of the buffers
 			if (std::any_of(mPixelBuffers.begin(), mPixelBuffers.end(), [pixelIndex](const auto& buffer)
@@ -82,7 +84,7 @@ void CDisplay::Render()
 	SDL_RenderPresent(mRenderer);
 }
 
-void CDisplay::UpdatePixelBuffer(const PixelBuffer& src)
+void CDisplay::UpdatePixelBuffer(const c8::SDisplayPixelBuffer& src)
 {
 	std::copy(
 		src.begin(),
