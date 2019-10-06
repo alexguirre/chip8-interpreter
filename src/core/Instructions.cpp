@@ -2,7 +2,11 @@
 #include <sstream>
 #include <random>
 #include <iomanip>
+#include <gsl/gsl_util>
 #include "Interpreter.h"
+
+using namespace c8;
+using namespace c8::constants;
 
 static std::string ToString_NAME(const SInstruction& i, const SContext&)
 {
@@ -92,7 +96,7 @@ static void Handler_SE_Vx_kk(SContext& c)
 {
 	if (c.V[c.X()] == c.KK())
 	{
-		c.PC += CInterpreter::InstructionByteSize;
+		c.PC += InstructionByteSize;
 	}
 }
 
@@ -100,7 +104,7 @@ static void Handler_SNE_Vx_kk(SContext& c)
 {
 	if (c.V[c.X()] != c.KK())
 	{
-		c.PC += CInterpreter::InstructionByteSize;
+		c.PC += InstructionByteSize;
 	}
 }
 
@@ -108,7 +112,7 @@ static void Handler_SE_Vx_Vy(SContext& c)
 {
 	if (c.V[c.X()] == c.V[c.Y()])
 	{
-		c.PC += CInterpreter::InstructionByteSize;
+		c.PC += InstructionByteSize;
 	}
 }
 
@@ -184,7 +188,7 @@ static void Handler_SNE_Vx_Vy(SContext& c)
 {
 	if (c.V[c.X()] != c.V[c.Y()])
 	{
-		c.PC += CInterpreter::InstructionByteSize;
+		c.PC += InstructionByteSize;
 	}
 }
 
@@ -223,9 +227,9 @@ static void Handler_DRW_Vx_Vy_n(SContext& c)
 		for (std::size_t bitIndex = 0; bitIndex < 8; bitIndex++)
 		{
 			const std::uint8_t bit = (byte >> (7 - bitIndex)) & 1;
-			const std::size_t x = (vx + bitIndex) % CDisplay::ResolutionWidth;
-			const std::size_t y = (vy + byteIndex) % CDisplay::ResolutionHeight;
-			std::uint8_t& pixel = c.PixelBuffer[x + y * CDisplay::ResolutionWidth];
+			const std::size_t x = (vx + bitIndex) % DisplayResolutionWidth;
+			const std::size_t y = (vy + byteIndex) % DisplayResolutionHeight;
+			std::uint8_t& pixel = c.PixelBuffer[x + y * DisplayResolutionWidth];
 
 			// collision
 			if (bit && pixel)
@@ -244,7 +248,7 @@ static void Handler_SKP_Vx(SContext& c)
 	const std::uint8_t vx = c.V[c.X()];
 	if (c.Keyboard[vx])
 	{
-		c.PC += CInterpreter::InstructionByteSize;
+		c.PC += InstructionByteSize;
 	}
 }
 
@@ -253,7 +257,7 @@ static void Handler_SKNP_Vx(SContext& c)
 	const std::uint8_t vx = c.V[c.X()];
 	if (!c.Keyboard[vx])
 	{
-		c.PC += CInterpreter::InstructionByteSize;
+		c.PC += InstructionByteSize;
 	}
 }
 
@@ -274,7 +278,7 @@ static void Handler_LD_Vx_K(SContext& c)
 	}
 
 	// no key was pressed, move the PC back to execute this instruction again in the next cycle
-	c.PC -= CInterpreter::InstructionByteSize;
+	c.PC -= InstructionByteSize;
 }
 
 static void Handler_LD_DT_Vx(SContext& c)
@@ -296,7 +300,7 @@ static void Handler_ADD_I_Vx(SContext& c)
 
 static void Handler_LD_F_Vx(SContext& c)
 {
-	c.I = CInterpreter::FontsetCharByteSize * c.V[c.X()];
+	c.I = FontsetCharByteSize * c.V[c.X()];
 }
 
 static void Handler_LD_B_Vx(SContext& c)
@@ -333,40 +337,43 @@ static void Handler_LD_Vx_derefI(SContext& c)
 
 using namespace std::placeholders;
 
-const std::vector<SInstruction> SInstruction::InstructionSet =
+namespace c8
 {
-	{ "CLS",	Handler_CLS,			0x00E0,	0xF0FF,	ToString_NAME									},
-	{ "RET",	Handler_RET,			0x00EE,	0xF0FF,	ToString_NAME									},
-	{ "JP",		Handler_JP_nnn,			0x1000,	0xF000,	ToString_NAME_nnn								},
-	{ "CALL",	Handler_CALL_nnn,		0x2000,	0xF000,	ToString_NAME_nnn								},
-	{ "SE",		Handler_SE_Vx_kk,		0x3000,	0xF000,	ToString_NAME_Vx_kk								},
-	{ "SNE",	Handler_SNE_Vx_kk,		0x4000,	0xF000,	ToString_NAME_Vx_kk								},
-	{ "SE",		Handler_SE_Vx_Vy,		0x5000,	0xF00F,	ToString_NAME_Vx_Vy								},
-	{ "LD",		Handler_LD_Vx_kk,		0x6000,	0xF000,	ToString_NAME_Vx_kk								},
-	{ "ADD",	Handler_ADD_Vx_kk,		0x7000,	0xF000,	ToString_NAME_Vx_kk								},
-	{ "LD",		Handler_LD_Vx_Vy,		0x8000,	0xF00F,	ToString_NAME_Vx_Vy								},
-	{ "OR",		Handler_OR_Vx_Vy,		0x8001,	0xF00F,	ToString_NAME_Vx_Vy								},
-	{ "AND",	Handler_AND_Vx_Vy,		0x8002,	0xF00F,	ToString_NAME_Vx_Vy								},
-	{ "XOR",	Handler_XOR_Vx_Vy,		0x8003,	0xF00F,	ToString_NAME_Vx_Vy								},
-	{ "ADD",	Handler_ADD_Vx_Vy,		0x8004,	0xF00F,	ToString_NAME_Vx_Vy								},
-	{ "SUB",	Handler_SUB_Vx_Vy,		0x8005,	0xF00F,	ToString_NAME_Vx_Vy								},
-	{ "SHR",	Handler_SHR_Vx,			0x8006,	0xF00F,	ToString_NAME_Vx								},
-	{ "SUBN",	Handler_SUBN_Vx_Vy,		0x8007,	0xF00F,	ToString_NAME_Vx_Vy								},
-	{ "SHL",	Handler_SHL_Vx,			0x800E,	0xF00F,	ToString_NAME_Vx								},
-	{ "SNE",	Handler_SNE_Vx_Vy,		0x9000,	0xF00F,	ToString_NAME_Vx_Vy								},
-	{ "LD",		Handler_LD_I_nnn,		0xA000,	0xF000,	std::bind(ToString_NAME_dst_nnn, _1, _2, "I")	},
-	{ "JP",		Handler_JP_V0_nnn,		0xB000,	0xF000,	std::bind(ToString_NAME_dst_nnn, _1, _2, "V0")	},
-	{ "RND",	Handler_RND_Vx_kk,		0xC000,	0xF000,	ToString_NAME_Vx_kk								},
-	{ "DRW",	Handler_DRW_Vx_Vy_n,	0xD000,	0xF000,	ToString_NAME_Vx_Vy_n							},
-	{ "SKP",	Handler_SKP_Vx,			0xE09E,	0xF0FF,	ToString_NAME_Vx								},
-	{ "SKNP",	Handler_SKNP_Vx,		0xE0A1,	0xF0FF,	ToString_NAME_Vx								},
-	{ "LD",		Handler_LD_Vx_DT,		0xF007,	0xF0FF,	std::bind(ToString_NAME_Vx_src, _1, _2, "DT")	},
-	{ "LD",		Handler_LD_Vx_K,		0xF00A,	0xF0FF,	std::bind(ToString_NAME_Vx_src, _1, _2, "K")	},
-	{ "LD",		Handler_LD_DT_Vx,		0xF015,	0xF0FF,	std::bind(ToString_NAME_dst_Vx, _1, _2, "DT")	},
-	{ "LD",		Handler_LD_ST_Vx,		0xF018,	0xF0FF,	std::bind(ToString_NAME_dst_Vx, _1, _2, "ST")	},
-	{ "ADD",	Handler_ADD_I_Vx,		0xF01E,	0xF0FF,	std::bind(ToString_NAME_dst_Vx, _1, _2, "I")	},
-	{ "LD",		Handler_LD_F_Vx,		0xF029,	0xF0FF,	std::bind(ToString_NAME_dst_Vx, _1, _2, "F")	},
-	{ "LD",		Handler_LD_B_Vx,		0xF033,	0xF0FF,	std::bind(ToString_NAME_dst_Vx, _1, _2, "B")	},
-	{ "LD",		Handler_LD_derefI_Vx,	0xF055,	0xF0FF,	std::bind(ToString_NAME_dst_Vx, _1, _2, "[I]")	},
-	{ "LD",		Handler_LD_Vx_derefI,	0xF065,	0xF0FF,	std::bind(ToString_NAME_Vx_src, _1, _2, "[I]")	},
-};
+	const std::vector<SInstruction> SInstruction::InstructionSet =
+	{
+		{ "CLS",	Handler_CLS,			0x00E0,	0xF0FF,	ToString_NAME									},
+		{ "RET",	Handler_RET,			0x00EE,	0xF0FF,	ToString_NAME									},
+		{ "JP",		Handler_JP_nnn,			0x1000,	0xF000,	ToString_NAME_nnn								},
+		{ "CALL",	Handler_CALL_nnn,		0x2000,	0xF000,	ToString_NAME_nnn								},
+		{ "SE",		Handler_SE_Vx_kk,		0x3000,	0xF000,	ToString_NAME_Vx_kk								},
+		{ "SNE",	Handler_SNE_Vx_kk,		0x4000,	0xF000,	ToString_NAME_Vx_kk								},
+		{ "SE",		Handler_SE_Vx_Vy,		0x5000,	0xF00F,	ToString_NAME_Vx_Vy								},
+		{ "LD",		Handler_LD_Vx_kk,		0x6000,	0xF000,	ToString_NAME_Vx_kk								},
+		{ "ADD",	Handler_ADD_Vx_kk,		0x7000,	0xF000,	ToString_NAME_Vx_kk								},
+		{ "LD",		Handler_LD_Vx_Vy,		0x8000,	0xF00F,	ToString_NAME_Vx_Vy								},
+		{ "OR",		Handler_OR_Vx_Vy,		0x8001,	0xF00F,	ToString_NAME_Vx_Vy								},
+		{ "AND",	Handler_AND_Vx_Vy,		0x8002,	0xF00F,	ToString_NAME_Vx_Vy								},
+		{ "XOR",	Handler_XOR_Vx_Vy,		0x8003,	0xF00F,	ToString_NAME_Vx_Vy								},
+		{ "ADD",	Handler_ADD_Vx_Vy,		0x8004,	0xF00F,	ToString_NAME_Vx_Vy								},
+		{ "SUB",	Handler_SUB_Vx_Vy,		0x8005,	0xF00F,	ToString_NAME_Vx_Vy								},
+		{ "SHR",	Handler_SHR_Vx,			0x8006,	0xF00F,	ToString_NAME_Vx								},
+		{ "SUBN",	Handler_SUBN_Vx_Vy,		0x8007,	0xF00F,	ToString_NAME_Vx_Vy								},
+		{ "SHL",	Handler_SHL_Vx,			0x800E,	0xF00F,	ToString_NAME_Vx								},
+		{ "SNE",	Handler_SNE_Vx_Vy,		0x9000,	0xF00F,	ToString_NAME_Vx_Vy								},
+		{ "LD",		Handler_LD_I_nnn,		0xA000,	0xF000,	std::bind(ToString_NAME_dst_nnn, _1, _2, "I")	},
+		{ "JP",		Handler_JP_V0_nnn,		0xB000,	0xF000,	std::bind(ToString_NAME_dst_nnn, _1, _2, "V0")	},
+		{ "RND",	Handler_RND_Vx_kk,		0xC000,	0xF000,	ToString_NAME_Vx_kk								},
+		{ "DRW",	Handler_DRW_Vx_Vy_n,	0xD000,	0xF000,	ToString_NAME_Vx_Vy_n							},
+		{ "SKP",	Handler_SKP_Vx,			0xE09E,	0xF0FF,	ToString_NAME_Vx								},
+		{ "SKNP",	Handler_SKNP_Vx,		0xE0A1,	0xF0FF,	ToString_NAME_Vx								},
+		{ "LD",		Handler_LD_Vx_DT,		0xF007,	0xF0FF,	std::bind(ToString_NAME_Vx_src, _1, _2, "DT")	},
+		{ "LD",		Handler_LD_Vx_K,		0xF00A,	0xF0FF,	std::bind(ToString_NAME_Vx_src, _1, _2, "K")	},
+		{ "LD",		Handler_LD_DT_Vx,		0xF015,	0xF0FF,	std::bind(ToString_NAME_dst_Vx, _1, _2, "DT")	},
+		{ "LD",		Handler_LD_ST_Vx,		0xF018,	0xF0FF,	std::bind(ToString_NAME_dst_Vx, _1, _2, "ST")	},
+		{ "ADD",	Handler_ADD_I_Vx,		0xF01E,	0xF0FF,	std::bind(ToString_NAME_dst_Vx, _1, _2, "I")	},
+		{ "LD",		Handler_LD_F_Vx,		0xF029,	0xF0FF,	std::bind(ToString_NAME_dst_Vx, _1, _2, "F")	},
+		{ "LD",		Handler_LD_B_Vx,		0xF033,	0xF0FF,	std::bind(ToString_NAME_dst_Vx, _1, _2, "B")	},
+		{ "LD",		Handler_LD_derefI_Vx,	0xF055,	0xF0FF,	std::bind(ToString_NAME_dst_Vx, _1, _2, "[I]")	},
+		{ "LD",		Handler_LD_Vx_derefI,	0xF065,	0xF0FF,	std::bind(ToString_NAME_Vx_src, _1, _2, "[I]")	},
+	};
+}

@@ -2,13 +2,10 @@
 #include <cstdint>
 #include <array>
 #include <SDL2/SDL.h>
+#include <core/Context.h>
 
 class CKeyboard
 {
-public:
-	static constexpr std::size_t NumberOfKeys = 16;
-	using State = std::array<bool, CKeyboard::NumberOfKeys>;
-
 private:
 	const std::uint8_t* const mState;
 
@@ -22,7 +19,7 @@ public:
 
 	bool IsDown(std::uint8_t key) const;
 	bool IsUp(std::uint8_t key) const;
-	void GetState(State& state) const;
+	void GetState(c8::SKeyboardState& state) const;
 
 private:
 	static SDL_Scancode KeyToSdlScancode(std::uint8_t key);

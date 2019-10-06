@@ -63,10 +63,10 @@ On Windows, enter the [Visual Studio development environment](https://docs.micro
 
 ## Usage
 
-Run `c8-interpreter` with the argument `--help` to see usage help.
+Run `c8` with the argument `--help` to see usage help.
 
 ```console
-> ./c8-interpreter --help
+> ./c8 --help
 ```
 
 ## References
