@@ -323,7 +323,6 @@ static void Handler_LD_derefI_Vx(SContext& c)
 	{
 		c.Memory[c.I + i] = c.V[i];
 	}
-	c.I += x + 1;
 }
 
 static void Handler_LD_Vx_derefI(SContext& c)
@@ -333,7 +332,6 @@ static void Handler_LD_Vx_derefI(SContext& c)
 	{
 		c.V[i] = c.Memory[c.I + i];
 	}
-	c.I += x + 1;
 }
 
 using namespace std::placeholders;
