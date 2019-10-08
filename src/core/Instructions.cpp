@@ -534,7 +534,7 @@ TEST_CASE("Instruction: SE Vx, kk")
 
 		Handler_SE_Vx_kk(c);
 
-		CHECK_EQ(c.PC, 2);
+		CHECK_EQ(c.PC, InstructionByteSize);
 	}
 
 	SUBCASE("No Skip: Vx != kk")
@@ -572,7 +572,7 @@ TEST_CASE("Instruction: SNE Vx, kk")
 
 		Handler_SNE_Vx_kk(c);
 
-		CHECK_EQ(c.PC, 2);
+		CHECK_EQ(c.PC, InstructionByteSize);
 	}
 }
 
@@ -589,7 +589,7 @@ TEST_CASE("Instruction: SE Vx, Vy")
 
 		Handler_SE_Vx_Vy(c);
 
-		CHECK_EQ(c.PC, 2);
+		CHECK_EQ(c.PC, InstructionByteSize);
 	}
 
 	SUBCASE("No Skip: Vx != Vy")
