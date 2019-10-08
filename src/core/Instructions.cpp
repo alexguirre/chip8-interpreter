@@ -684,3 +684,47 @@ TEST_CASE("Instruction: XOR Vx, Vy")
 	CHECK_EQ(c.V[1], 0x22);
 	CHECK_EQ(c.V[2], 0x12);
 }
+
+TEST_CASE("Instruction: ADD Vx, Vy")
+{
+	SContext c{};
+
+	SUBCASE("Without carry")
+	{
+		c.V[1] = 0x10;
+		c.V[2] = 0x20;
+		c.IR = 0x0120;
+
+		Handler_ADD_Vx_Vy(c);
+
+		CHECK_EQ(c.V[1], 0x30);
+		CHECK_EQ(c.V[2], 0x20);
+		CHECK_EQ(c.V[0xF], 0);
+	}
+
+	SUBCASE("With carry")
+	{
+		c.V[1] = 0xA0;
+		c.V[2] = 0xB0;
+		c.IR = 0x0120;
+
+		Handler_ADD_Vx_Vy(c);
+
+		CHECK_EQ(c.V[1], 0x50); // 0xA0 + 0xB0 = 0x150 
+		CHECK_EQ(c.V[2], 0xB0);
+		CHECK_EQ(c.V[0xF], 1);
+	}
+
+	SUBCASE("With carry (border)")
+	{
+		c.V[1] = 0x10;
+		c.V[2] = 0xF0;
+		c.IR = 0x0120;
+
+		Handler_ADD_Vx_Vy(c);
+
+		CHECK_EQ(c.V[1], 0); // 0xF0 + 0x10 = 0x100 
+		CHECK_EQ(c.V[2], 0xF0);
+		CHECK_EQ(c.V[0xF], 1);
+	}
+}
