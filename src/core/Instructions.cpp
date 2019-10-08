@@ -628,3 +628,17 @@ TEST_CASE("Instruction: ADD Vx, kk")
 
 	CHECK_EQ(c.V[1], 0x30);
 }
+
+TEST_CASE("Instruction: LD Vx, Vy")
+{
+	SContext c{};
+
+	c.V[1] = 0x10;
+	c.V[2] = 0x20;
+	c.IR = 0x0120;
+
+	Handler_LD_Vx_Vy(c);
+
+	CHECK_EQ(c.V[1], 0x20);
+	CHECK_EQ(c.V[2], 0x20);
+}
