@@ -899,3 +899,15 @@ TEST_CASE("Instruction: SNE Vx, Vy")
 		CHECK_EQ(c.PC, InstructionByteSize);
 	}
 }
+
+TEST_CASE("Instruction: LD I, nnn")
+{
+	SContext c{};
+
+	c.I = 0;
+	c.IR = 0x0123;
+
+	Handler_LD_I_nnn(c);
+
+	CHECK_EQ(c.I, 0x123);
+}
