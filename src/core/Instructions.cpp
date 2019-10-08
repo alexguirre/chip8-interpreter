@@ -521,3 +521,30 @@ TEST_CASE("Instruction: CALL nnn")
 		CHECK_THROWS(Handler_CALL_nnn(c));
 	}
 }
+
+TEST_CASE("Instruction: SE Vx, kk")
+{
+	SContext c{};
+	
+	SUBCASE("Skip:    Vx == kk")
+	{
+		c.PC = 0;
+		c.V[1] = 0x11;
+		c.IR = 0x0111;
+
+		Handler_SE_Vx_kk(c);
+
+		CHECK_EQ(c.PC, 2);
+	}
+
+	SUBCASE("No Skip: Vx != kk")
+	{
+		c.PC = 0;
+		c.V[1] = 0x11;
+		c.IR = 0x0122;
+
+		Handler_SE_Vx_kk(c);
+
+		CHECK_EQ(c.PC, 0);
+	}
+}
