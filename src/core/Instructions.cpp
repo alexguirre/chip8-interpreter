@@ -656,3 +656,17 @@ TEST_CASE("Instruction: OR Vx, Vy")
 	CHECK_EQ(c.V[1], 0x12);
 	CHECK_EQ(c.V[2], 0x02);
 }
+
+TEST_CASE("Instruction: AND Vx, Vy")
+{
+	SContext c{};
+
+	c.V[1] = 0x30;
+	c.V[2] = 0x12;
+	c.IR = 0x0120;
+
+	Handler_AND_Vx_Vy(c);
+
+	CHECK_EQ(c.V[1], 0x10);
+	CHECK_EQ(c.V[2], 0x12);
+}
