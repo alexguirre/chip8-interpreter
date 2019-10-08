@@ -91,6 +91,8 @@ static void Handler_JP_nnn(SContext& c)
 
 static void Handler_CALL_nnn(SContext& c)
 {
+	Expects(c.SP >= 0 && c.SP < c.Stack.size());
+
 	c.Stack[c.SP++] = c.PC;
 	c.PC = c.NNN();
 }
@@ -480,3 +482,42 @@ TEST_CASE("Instruction: JP nnn")
 	CHECK_EQ(c.PC, 0x123);
 }
 
+TEST_CASE("Instruction: CALL nnn")
+{
+	SContext c{};
+
+	SUBCASE("First CALL")
+	{
+		c.IR = 0x0123;
+		c.PC = 0x444;
+		c.SP = 0;
+
+		Handler_CALL_nnn(c);
+
+		CHECK_EQ(c.PC, 0x123);
+		CHECK_EQ(c.SP, 1);
+		CHECK_EQ(c.Stack[0], 0x444);
+	}
+
+	SUBCASE("Second CALL")
+	{
+		c.IR = 0x0456;
+		c.PC = 0x123;
+		c.SP = 1;
+		c.Stack[0] = 0x444;
+
+		Handler_CALL_nnn(c);
+
+		CHECK_EQ(c.PC, 0x456);
+		CHECK_EQ(c.SP, 2);
+		CHECK_EQ(c.Stack[0], 0x444);
+		CHECK_EQ(c.Stack[1], 0x123);
+	}
+
+	SUBCASE("Stack full")
+	{
+		c.SP = gsl::narrow<std::uint8_t>(c.Stack.size());
+
+		CHECK_THROWS(Handler_CALL_nnn(c));
+	}
+}
