@@ -772,3 +772,30 @@ TEST_CASE("Instruction: SUB Vx, Vy")
 		CHECK_EQ(c.V[0xF], 0);
 	}
 }
+
+TEST_CASE("Instruction: SHR Vx")
+{
+	SContext c{};
+
+	SUBCASE("LSB is 0")
+	{
+		c.V[1] = 0x10;
+		c.IR = 0x0100;
+
+		Handler_SHR_Vx(c);
+
+		CHECK_EQ(c.V[1], 0x08);
+		CHECK_EQ(c.V[0xF], 0);
+	}
+
+	SUBCASE("LSB is 1")
+	{
+		c.V[1] = 0x11;
+		c.IR = 0x0100;
+
+		Handler_SHR_Vx(c);
+
+		CHECK_EQ(c.V[1], 0x08);
+		CHECK_EQ(c.V[0xF], 1);
+	}
+}
