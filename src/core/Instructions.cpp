@@ -870,3 +870,32 @@ TEST_CASE("Instruction: SHL Vx")
 		CHECK_EQ(c.V[0xF], 1);
 	}
 }
+
+TEST_CASE("Instruction: SNE Vx, Vy")
+{
+	SContext c{};
+
+	SUBCASE("No Skip: Vx == Vy")
+	{
+		c.PC = 0;
+		c.V[1] = 0x10;
+		c.V[2] = 0x10;
+		c.IR = 0x0120;
+
+		Handler_SNE_Vx_Vy(c);
+
+		CHECK_EQ(c.PC, 0);
+	}
+
+	SUBCASE("Skip:    Vx != Vy")
+	{
+		c.PC = 0;
+		c.V[1] = 0x10;
+		c.V[2] = 0x20;
+		c.IR = 0x0120;
+
+		Handler_SNE_Vx_Vy(c);
+
+		CHECK_EQ(c.PC, InstructionByteSize);
+	}
+}
