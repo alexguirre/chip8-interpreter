@@ -79,6 +79,8 @@ static void Handler_CLS(SContext& c)
 
 static void Handler_RET(SContext& c)
 {
+	Expects(c.SP > 0 && c.SP <= c.Stack.size());
+
 	c.PC = c.Stack[--c.SP];
 }
 
@@ -445,4 +447,25 @@ TEST_CASE("Instruction: CLS")
 	
 	CHECK(c.PixelBufferDirty);
 	CHECK(std::all_of(c.PixelBuffer.begin(), c.PixelBuffer.end(), [](std::uint8_t b) { return b == 0; }));
+}
+
+TEST_CASE("Instruction: RET")
+{
+	SContext c{};
+	c.Stack[0] = 0x1111;
+	c.Stack[1] = 0x2222;
+	c.SP = 2;
+	c.PC = 0;
+
+	Handler_RET(c);
+
+	CHECK_EQ(c.PC, 0x2222);
+	CHECK_EQ(c.SP, 1);
+
+	Handler_RET(c);
+
+	CHECK_EQ(c.PC, 0x1111);
+	CHECK_EQ(c.SP, 0);
+
+	CHECK_THROWS(Handler_RET(c));
 }
