@@ -12,7 +12,7 @@ namespace c8
 {
 	using namespace constants;
 
-	CInterpreter::CInterpreter(const std::shared_ptr<CPlatform>& platform)
+	CInterpreter::CInterpreter(const std::shared_ptr<IPlatform>& platform)
 		: mPlatform{ platform }, mContext{}, mPaused{ false }
 	{
 	}

@@ -4,7 +4,7 @@
 #include "Keyboard.h"
 #include "Sound.h"
 
-class CAppPlatform : public c8::CPlatform
+class CAppPlatform : public c8::IPlatform
 {
 private:
 	std::unique_ptr<CDisplay> mDisplay;

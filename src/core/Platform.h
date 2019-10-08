@@ -4,10 +4,10 @@
 
 namespace c8
 {
-	class CPlatform
+	class IPlatform
 	{
 	public:
-		virtual ~CPlatform() = default;
+		virtual ~IPlatform() = default;
 
 		virtual void GetKeyboardState(SKeyboardState& dest) = 0;
 		virtual void UpdateDisplay(const SDisplayPixelBuffer& pixelBuffer) = 0;
