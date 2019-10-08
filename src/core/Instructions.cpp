@@ -924,3 +924,24 @@ TEST_CASE("Instruction: JP V0, nnn")
 
 	CHECK_EQ(c.PC, 0x233);
 }
+
+TEST_CASE("Instruction: RND Vx, kk")
+{
+	constexpr std::size_t N{ 1000 }; // Number of times to run this test
+
+	constexpr std::uint8_t kk{ 0b10100101 };
+	constexpr std::uint8_t kkInv{ gsl::narrow_cast<std::uint8_t>(~kk) };
+
+	SContext c{};
+	c.IR = 0x0100 | kk;
+
+	for (std::size_t i = 0; i < N; i++)
+	{
+		c.V[1] = 0;
+
+		Handler_RND_Vx_kk(c);
+
+		// check that all bits not set in `kk` are 0 in `Vx`
+		CHECK_EQ(c.V[1] & kkInv, 0);
+	}
+}
