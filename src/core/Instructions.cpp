@@ -604,3 +604,15 @@ TEST_CASE("Instruction: SE Vx, Vy")
 		CHECK_EQ(c.PC, 0);
 	}
 }
+
+TEST_CASE("Instruction: LD Vx, kk")
+{
+	SContext c{};
+
+	c.V[1] = 0;
+	c.IR = 0x0111;
+
+	Handler_LD_Vx_kk(c);
+
+	CHECK_EQ(c.V[1], 0x11);
+}
