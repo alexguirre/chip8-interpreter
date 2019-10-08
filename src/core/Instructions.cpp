@@ -911,3 +911,16 @@ TEST_CASE("Instruction: LD I, nnn")
 
 	CHECK_EQ(c.I, 0x123);
 }
+
+TEST_CASE("Instruction: JP V0, nnn")
+{
+	SContext c{};
+
+	c.PC = 0;
+	c.V[0] = 0x11;
+	c.IR = 0x0222;
+
+	Handler_JP_V0_nnn(c);
+
+	CHECK_EQ(c.PC, 0x233);
+}
