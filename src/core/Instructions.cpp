@@ -469,3 +469,14 @@ TEST_CASE("Instruction: RET")
 
 	CHECK_THROWS(Handler_RET(c));
 }
+
+TEST_CASE("Instruction: JP nnn")
+{
+	SContext c{};
+	c.IR = 0x0123;
+
+	Handler_JP_nnn(c);
+
+	CHECK_EQ(c.PC, 0x123);
+}
+
