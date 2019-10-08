@@ -945,3 +945,34 @@ TEST_CASE("Instruction: RND Vx, kk")
 		CHECK_EQ(c.V[1] & kkInv, 0);
 	}
 }
+
+// TODO: DRW Vx, Vy, n
+
+TEST_CASE("Instruction: SKP Vx")
+{
+	SContext c{};
+
+	SUBCASE("Skip:    Key pressed")
+	{
+		c.Keyboard[8] = true;
+		c.V[1] = 8;
+		c.IR = 0x0100;
+		c.PC = 0;
+
+		Handler_SKP_Vx(c);
+
+		CHECK_EQ(c.PC, InstructionByteSize);
+	}
+
+	SUBCASE("No Skip: Key not pressed")
+	{
+		c.Keyboard[8] = false;
+		c.V[1] = 8;
+		c.IR = 0x0100;
+		c.PC = 0;
+
+		Handler_SKP_Vx(c);
+
+		CHECK_EQ(c.PC, 0);
+	}
+}
