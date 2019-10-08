@@ -436,4 +436,13 @@ TEST_CASE("Instruction ToString")
 	}
 }
 
-// TODO: instructions handlers tests
+TEST_CASE("Instruction: CLS")
+{
+	SContext c{};
+	std::fill(c.PixelBuffer.begin(), c.PixelBuffer.end(), true);
+
+	Handler_CLS(c);
+	
+	CHECK(c.PixelBufferDirty);
+	CHECK(std::all_of(c.PixelBuffer.begin(), c.PixelBuffer.end(), [](bool b) { return !b; }));
+}
