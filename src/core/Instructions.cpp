@@ -728,3 +728,47 @@ TEST_CASE("Instruction: ADD Vx, Vy")
 		CHECK_EQ(c.V[0xF], 1);
 	}
 }
+
+TEST_CASE("Instruction: SUB Vx, Vy")
+{
+	SContext c{};
+
+	SUBCASE("Without borrow")
+	{
+		c.V[1] = 0x20;
+		c.V[2] = 0x10;
+		c.IR = 0x0120;
+
+		Handler_SUB_Vx_Vy(c);
+
+		CHECK_EQ(c.V[1], 0x10);
+		CHECK_EQ(c.V[2], 0x10);
+		CHECK_EQ(c.V[0xF], 1);
+	}
+
+	SUBCASE("With borrow")
+	{
+		c.V[1] = 0x10;
+		c.V[2] = 0x20;
+		c.IR = 0x0120;
+
+		Handler_SUB_Vx_Vy(c);
+
+		CHECK_EQ(c.V[1], 0xF0); // 0x10 - 0x20 = 0xF0 (wrapped around)
+		CHECK_EQ(c.V[2], 0x20);
+		CHECK_EQ(c.V[0xF], 0);
+	}
+
+	SUBCASE("Vx == Vy")
+	{
+		c.V[1] = 0x10;
+		c.V[2] = 0x10;
+		c.IR = 0x0120;
+
+		Handler_SUB_Vx_Vy(c);
+
+		CHECK_EQ(c.V[1], 0);
+		CHECK_EQ(c.V[2], 0x10);
+		CHECK_EQ(c.V[0xF], 0);
+	}
+}
