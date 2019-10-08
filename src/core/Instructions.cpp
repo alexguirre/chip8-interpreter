@@ -575,3 +575,32 @@ TEST_CASE("Instruction: SNE Vx, kk")
 		CHECK_EQ(c.PC, 2);
 	}
 }
+
+TEST_CASE("Instruction: SE Vx, Vy")
+{
+	SContext c{};
+
+	SUBCASE("Skip:    Vx == Vy")
+	{
+		c.PC = 0;
+		c.V[1] = 0x11;
+		c.V[2] = 0x11;
+		c.IR = 0x0120;
+
+		Handler_SE_Vx_Vy(c);
+
+		CHECK_EQ(c.PC, 2);
+	}
+
+	SUBCASE("No Skip: Vx != Vy")
+	{
+		c.PC = 0;
+		c.V[1] = 0x11;
+		c.V[2] = 0x22;
+		c.IR = 0x0120;
+
+		Handler_SE_Vx_Vy(c);
+
+		CHECK_EQ(c.PC, 0);
+	}
+}
