@@ -1019,3 +1019,35 @@ TEST_CASE("Instruction: LD Vx, DT")
 	CHECK_EQ(c.V[1], 0x12);
 	CHECK_EQ(c.DT, 0x12);
 }
+
+TEST_CASE("Instruction: LD Vx, K")
+{
+	SContext c{};
+
+	SUBCASE("No key pressed")
+	{
+		c.V[1] = 0;
+		c.IR = 0x0100;
+		c.PC = 8;
+		std::fill(c.Keyboard.begin(), c.Keyboard.end(), false);
+
+		Handler_LD_Vx_K(c);
+
+		CHECK_EQ(c.V[1], 0);
+		CHECK_EQ(c.PC, 8 - InstructionByteSize);
+	}
+
+	SUBCASE("Key pressed")
+	{
+		c.V[1] = 0;
+		c.IR = 0x0100;
+		c.PC = 8;
+		std::fill(c.Keyboard.begin(), c.Keyboard.end(), false);
+		c.Keyboard[8] = true;
+
+		Handler_LD_Vx_K(c);
+
+		CHECK_EQ(c.V[1], 8);
+		CHECK_EQ(c.PC, 8);
+	}
+}
