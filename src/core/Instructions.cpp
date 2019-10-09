@@ -1005,3 +1005,17 @@ TEST_CASE("Instruction: SKNP Vx")
 		CHECK_EQ(c.PC, 0);
 	}
 }
+
+TEST_CASE("Instruction: LD Vx, DT")
+{
+	SContext c{};
+
+	c.V[1] = 0;
+	c.DT = 0x12;
+	c.IR = 0x0100;
+
+	Handler_LD_Vx_DT(c);
+
+	CHECK_EQ(c.V[1], 0x12);
+	CHECK_EQ(c.DT, 0x12);
+}
