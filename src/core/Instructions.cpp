@@ -1132,3 +1132,68 @@ TEST_CASE("Instruction: LD F, Vx")
 		CHECK_THROWS(Handler_LD_F_Vx(c));
 	}
 }
+
+TEST_CASE("Instruction: LD B, Vx")
+{
+	SContext c{};
+	c.I = 0x400;
+	c.Memory[c.I + 0] = 0;
+	c.Memory[c.I + 1] = 0;
+	c.Memory[c.I + 2] = 0;
+	c.IR = 0x0100;
+
+	SUBCASE("No digits")
+	{
+		c.V[1] = 000;
+
+		Handler_LD_B_Vx(c);
+
+		CHECK_EQ(c.Memory[c.I + 0], 0);
+		CHECK_EQ(c.Memory[c.I + 1], 0);
+		CHECK_EQ(c.Memory[c.I + 2], 0);
+	}
+
+	SUBCASE("Ones digit only")
+	{
+		c.V[1] = 1;
+		
+		Handler_LD_B_Vx(c);
+
+		CHECK_EQ(c.Memory[c.I + 0], 0);
+		CHECK_EQ(c.Memory[c.I + 1], 0);
+		CHECK_EQ(c.Memory[c.I + 2], 1);
+	}
+
+	SUBCASE("Tens digit only")
+	{
+		c.V[1] = 10;
+
+		Handler_LD_B_Vx(c);
+
+		CHECK_EQ(c.Memory[c.I + 0], 0);
+		CHECK_EQ(c.Memory[c.I + 1], 1);
+		CHECK_EQ(c.Memory[c.I + 2], 0);
+	}
+
+	SUBCASE("Hundreds digit only")
+	{
+		c.V[1] = 100;
+
+		Handler_LD_B_Vx(c);
+
+		CHECK_EQ(c.Memory[c.I + 0], 1);
+		CHECK_EQ(c.Memory[c.I + 1], 0);
+		CHECK_EQ(c.Memory[c.I + 2], 0);
+	}
+
+	SUBCASE("All digits")
+	{
+		c.V[1] = 123;
+
+		Handler_LD_B_Vx(c);
+
+		CHECK_EQ(c.Memory[c.I + 0], 1);
+		CHECK_EQ(c.Memory[c.I + 1], 2);
+		CHECK_EQ(c.Memory[c.I + 2], 3);
+	}
+}
