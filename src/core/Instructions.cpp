@@ -1051,3 +1051,17 @@ TEST_CASE("Instruction: LD Vx, K")
 		CHECK_EQ(c.PC, 8);
 	}
 }
+
+TEST_CASE("Instruction: LD DT, Vx")
+{
+	SContext c{};
+
+	c.V[1] = 0x12;
+	c.DT = 0;
+	c.IR = 0x0100;
+
+	Handler_LD_DT_Vx(c);
+
+	CHECK_EQ(c.V[1], 0x12);
+	CHECK_EQ(c.DT, 0x12);
+}
