@@ -1264,3 +1264,70 @@ TEST_CASE("Instruction: LD [I], Vx")
 		CHECK(std::equal(ExpectedValues.begin(), ExpectedValues.end(), c.Memory.begin() + c.I));
 	}
 }
+
+TEST_CASE("Instruction: LD Vx, [I]")
+{
+	SContext c{};
+
+	c.I = 0x400;
+
+	SUBCASE("Single register")
+	{
+		constexpr std::array<std::uint8_t, NumberOfRegisters> InputValues
+		{
+			0x10, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD,
+			0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD,
+		};
+		std::copy(InputValues.begin(), InputValues.end(), c.Memory.begin() + c.I);
+		c.IR = 0x0000;
+
+		Handler_LD_Vx_derefI(c);
+
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedValues
+		{
+			0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		};
+		CHECK(std::equal(ExpectedValues.begin(), ExpectedValues.end(), c.V.begin()));
+	}
+
+	SUBCASE("Multiple registers")
+	{
+		constexpr std::array<std::uint8_t, NumberOfRegisters> InputValues
+		{
+			0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80,
+			0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD,
+		};
+		std::copy(InputValues.begin(), InputValues.end(), c.Memory.begin() + c.I);
+		c.IR = 0x0700;
+
+		Handler_LD_Vx_derefI(c);
+
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedValues
+		{
+			0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		};
+		CHECK(std::equal(ExpectedValues.begin(), ExpectedValues.end(), c.V.begin()));
+	}
+
+	SUBCASE("All registers")
+	{
+		constexpr std::array<std::uint8_t, NumberOfRegisters> InputValues
+		{
+			0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80,
+			0x90, 0xA0, 0xB0, 0xC0, 0xD0, 0xE0, 0xF0, 0xFF,
+		};
+		std::copy(InputValues.begin(), InputValues.end(), c.Memory.begin() + c.I);
+		c.IR = 0x0F00;
+
+		Handler_LD_Vx_derefI(c);
+
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedValues
+		{
+			0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80,
+			0x90, 0xA0, 0xB0, 0xC0, 0xD0, 0xE0, 0xF0, 0xFF,
+		};
+		CHECK(std::equal(ExpectedValues.begin(), ExpectedValues.end(), c.V.begin()));
+	}
+}
