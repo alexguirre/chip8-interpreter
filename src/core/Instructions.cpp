@@ -444,6 +444,8 @@ TEST_CASE("Instruction ToString")
 	}
 }
 
+TEST_SUITE_BEGIN("Instruction set");
+
 TEST_CASE("Instruction: CLS")
 {
 	SContext c{};
@@ -1331,3 +1333,5 @@ TEST_CASE("Instruction: LD Vx, [I]")
 		CHECK(std::equal(ExpectedValues.begin(), ExpectedValues.end(), c.V.begin()));
 	}
 }
+
+TEST_SUITE_END();
