@@ -305,7 +305,11 @@ static void Handler_ADD_I_Vx(SContext& c)
 
 static void Handler_LD_F_Vx(SContext& c)
 {
-	c.I = FontsetCharByteSize * c.V[c.X()];
+	const std::uint8_t digit = c.V[c.X()];
+
+	Expects(digit >= 0 && digit < FontsetCharCount);
+
+	c.I = FontsetCharByteSize * digit;
 }
 
 static void Handler_LD_B_Vx(SContext& c)
@@ -1092,4 +1096,39 @@ TEST_CASE("Instruction: ADD I, Vx")
 
 	CHECK_EQ(c.V[1], 0x20);
 	CHECK_EQ(c.I, 0x30);
+}
+
+TEST_CASE("Instruction: LD F, Vx")
+{
+	SContext c{};
+
+	SUBCASE("Valid font chars")
+	{
+		for (std::size_t digit = 0; digit < FontsetCharCount; digit++)
+		{
+			c.V[1] = gsl::narrow<std::uint8_t>(digit);
+			c.I = 0;
+			c.IR = 0x0100;
+
+			Handler_LD_F_Vx(c);
+
+			CHECK_EQ(c.V[1], digit);
+			CHECK_EQ(c.I, digit * FontsetCharByteSize);
+		}
+	}
+
+	SUBCASE("Invalid font chars")
+	{
+		c.V[1] = FontsetCharCount;
+		c.I = 0;
+		c.IR = 0x0100;
+
+		CHECK_THROWS(Handler_LD_F_Vx(c));
+
+		c.V[1] = FontsetCharCount + 10;
+		c.I = 0;
+		c.IR = 0x0100;
+
+		CHECK_THROWS(Handler_LD_F_Vx(c));
+	}
 }
