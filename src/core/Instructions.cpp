@@ -79,6 +79,8 @@ static void Handler_CLS(SContext& c)
 
 static void Handler_RET(SContext& c)
 {
+	Expects(c.SP > 0 && c.SP <= c.Stack.size());
+
 	c.PC = c.Stack[--c.SP];
 }
 
@@ -89,6 +91,8 @@ static void Handler_JP_nnn(SContext& c)
 
 static void Handler_CALL_nnn(SContext& c)
 {
+	Expects(c.SP >= 0 && c.SP < c.Stack.size());
+
 	c.Stack[c.SP++] = c.PC;
 	c.PC = c.NNN();
 }
@@ -301,7 +305,11 @@ static void Handler_ADD_I_Vx(SContext& c)
 
 static void Handler_LD_F_Vx(SContext& c)
 {
-	c.I = FontsetCharByteSize * c.V[c.X()];
+	const std::uint8_t digit = c.V[c.X()];
+
+	Expects(digit >= 0 && digit < FontsetCharCount);
+
+	c.I = FontsetCharByteSize * digit;
 }
 
 static void Handler_LD_B_Vx(SContext& c)
@@ -436,4 +444,964 @@ TEST_CASE("Instruction ToString")
 	}
 }
 
-// TODO: instructions handlers tests
+TEST_SUITE_BEGIN("Instruction set");
+
+TEST_CASE("Instruction: CLS")
+{
+	SContext c{};
+	std::fill(c.PixelBuffer.begin(), c.PixelBuffer.end(), std::uint8_t{ 1 });
+
+	Handler_CLS(c);
+	
+	CHECK(c.PixelBufferDirty);
+	CHECK(std::all_of(c.PixelBuffer.begin(), c.PixelBuffer.end(), [](std::uint8_t b) { return b == 0; }));
+}
+
+TEST_CASE("Instruction: RET")
+{
+	SContext c{};
+	c.Stack[0] = 0x1111;
+	c.Stack[1] = 0x2222;
+	c.SP = 2;
+	c.PC = 0;
+
+	Handler_RET(c);
+
+	CHECK_EQ(c.PC, 0x2222);
+	CHECK_EQ(c.SP, 1);
+
+	Handler_RET(c);
+
+	CHECK_EQ(c.PC, 0x1111);
+	CHECK_EQ(c.SP, 0);
+
+	CHECK_THROWS(Handler_RET(c));
+}
+
+TEST_CASE("Instruction: JP nnn")
+{
+	SContext c{};
+	c.IR = 0x0123;
+
+	Handler_JP_nnn(c);
+
+	CHECK_EQ(c.PC, 0x123);
+}
+
+TEST_CASE("Instruction: CALL nnn")
+{
+	SContext c{};
+
+	SUBCASE("First CALL")
+	{
+		c.IR = 0x0123;
+		c.PC = 0x444;
+		c.SP = 0;
+
+		Handler_CALL_nnn(c);
+
+		CHECK_EQ(c.PC, 0x123);
+		CHECK_EQ(c.SP, 1);
+		CHECK_EQ(c.Stack[0], 0x444);
+	}
+
+	SUBCASE("Second CALL")
+	{
+		c.IR = 0x0456;
+		c.PC = 0x123;
+		c.SP = 1;
+		c.Stack[0] = 0x444;
+
+		Handler_CALL_nnn(c);
+
+		CHECK_EQ(c.PC, 0x456);
+		CHECK_EQ(c.SP, 2);
+		CHECK_EQ(c.Stack[0], 0x444);
+		CHECK_EQ(c.Stack[1], 0x123);
+	}
+
+	SUBCASE("Stack full")
+	{
+		c.SP = gsl::narrow<std::uint8_t>(c.Stack.size());
+
+		CHECK_THROWS(Handler_CALL_nnn(c));
+	}
+}
+
+TEST_CASE("Instruction: SE Vx, kk")
+{
+	SContext c{};
+	
+	SUBCASE("Skip:    Vx == kk")
+	{
+		c.PC = 0;
+		c.V[1] = 0x11;
+		c.IR = 0x0111;
+
+		Handler_SE_Vx_kk(c);
+
+		CHECK_EQ(c.PC, InstructionByteSize);
+	}
+
+	SUBCASE("No Skip: Vx != kk")
+	{
+		c.PC = 0;
+		c.V[1] = 0x11;
+		c.IR = 0x0122;
+
+		Handler_SE_Vx_kk(c);
+
+		CHECK_EQ(c.PC, 0);
+	}
+}
+
+TEST_CASE("Instruction: SNE Vx, kk")
+{
+	SContext c{};
+
+	SUBCASE("No Skip: Vx == kk")
+	{
+		c.PC = 0;
+		c.V[1] = 0x11;
+		c.IR = 0x0111;
+
+		Handler_SNE_Vx_kk(c);
+
+		CHECK_EQ(c.PC, 0);
+	}
+
+	SUBCASE("Skip:    Vx != kk")
+	{
+		c.PC = 0;
+		c.V[1] = 0x11;
+		c.IR = 0x0122;
+
+		Handler_SNE_Vx_kk(c);
+
+		CHECK_EQ(c.PC, InstructionByteSize);
+	}
+}
+
+TEST_CASE("Instruction: SE Vx, Vy")
+{
+	SContext c{};
+
+	SUBCASE("Skip:    Vx == Vy")
+	{
+		c.PC = 0;
+		c.V[1] = 0x11;
+		c.V[2] = 0x11;
+		c.IR = 0x0120;
+
+		Handler_SE_Vx_Vy(c);
+
+		CHECK_EQ(c.PC, InstructionByteSize);
+	}
+
+	SUBCASE("No Skip: Vx != Vy")
+	{
+		c.PC = 0;
+		c.V[1] = 0x11;
+		c.V[2] = 0x22;
+		c.IR = 0x0120;
+
+		Handler_SE_Vx_Vy(c);
+
+		CHECK_EQ(c.PC, 0);
+	}
+}
+
+TEST_CASE("Instruction: LD Vx, kk")
+{
+	SContext c{};
+
+	c.V[1] = 0;
+	c.IR = 0x0111;
+
+	Handler_LD_Vx_kk(c);
+
+	CHECK_EQ(c.V[1], 0x11);
+}
+
+TEST_CASE("Instruction: ADD Vx, kk")
+{
+	SContext c{};
+
+	c.V[1] = 0x20;
+	c.IR = 0x0110;
+
+	Handler_ADD_Vx_kk(c);
+
+	CHECK_EQ(c.V[1], 0x30);
+}
+
+TEST_CASE("Instruction: LD Vx, Vy")
+{
+	SContext c{};
+
+	c.V[1] = 0x10;
+	c.V[2] = 0x20;
+	c.IR = 0x0120;
+
+	Handler_LD_Vx_Vy(c);
+
+	CHECK_EQ(c.V[1], 0x20);
+	CHECK_EQ(c.V[2], 0x20);
+}
+
+TEST_CASE("Instruction: OR Vx, Vy")
+{
+	SContext c{};
+
+	c.V[1] = 0x10;
+	c.V[2] = 0x02;
+	c.IR = 0x0120;
+
+	Handler_OR_Vx_Vy(c);
+
+	CHECK_EQ(c.V[1], 0x12);
+	CHECK_EQ(c.V[2], 0x02);
+}
+
+TEST_CASE("Instruction: AND Vx, Vy")
+{
+	SContext c{};
+
+	c.V[1] = 0x30;
+	c.V[2] = 0x12;
+	c.IR = 0x0120;
+
+	Handler_AND_Vx_Vy(c);
+
+	CHECK_EQ(c.V[1], 0x10);
+	CHECK_EQ(c.V[2], 0x12);
+}
+
+TEST_CASE("Instruction: XOR Vx, Vy")
+{
+	SContext c{};
+
+	c.V[1] = 0x30;
+	c.V[2] = 0x12;
+	c.IR = 0x0120;
+
+	Handler_XOR_Vx_Vy(c);
+
+	CHECK_EQ(c.V[1], 0x22);
+	CHECK_EQ(c.V[2], 0x12);
+}
+
+TEST_CASE("Instruction: ADD Vx, Vy")
+{
+	SContext c{};
+
+	SUBCASE("Without carry")
+	{
+		c.V[1] = 0x10;
+		c.V[2] = 0x20;
+		c.IR = 0x0120;
+
+		Handler_ADD_Vx_Vy(c);
+
+		CHECK_EQ(c.V[1], 0x30);
+		CHECK_EQ(c.V[2], 0x20);
+		CHECK_EQ(c.V[0xF], 0);
+	}
+
+	SUBCASE("With carry")
+	{
+		c.V[1] = 0xA0;
+		c.V[2] = 0xB0;
+		c.IR = 0x0120;
+
+		Handler_ADD_Vx_Vy(c);
+
+		CHECK_EQ(c.V[1], 0x50); // 0xA0 + 0xB0 = 0x150 
+		CHECK_EQ(c.V[2], 0xB0);
+		CHECK_EQ(c.V[0xF], 1);
+	}
+
+	SUBCASE("With carry (border)")
+	{
+		c.V[1] = 0x10;
+		c.V[2] = 0xF0;
+		c.IR = 0x0120;
+
+		Handler_ADD_Vx_Vy(c);
+
+		CHECK_EQ(c.V[1], 0); // 0xF0 + 0x10 = 0x100 
+		CHECK_EQ(c.V[2], 0xF0);
+		CHECK_EQ(c.V[0xF], 1);
+	}
+}
+
+TEST_CASE("Instruction: SUB Vx, Vy")
+{
+	SContext c{};
+
+	SUBCASE("Without borrow")
+	{
+		c.V[1] = 0x20;
+		c.V[2] = 0x10;
+		c.IR = 0x0120;
+
+		Handler_SUB_Vx_Vy(c);
+
+		CHECK_EQ(c.V[1], 0x10);
+		CHECK_EQ(c.V[2], 0x10);
+		CHECK_EQ(c.V[0xF], 1);
+	}
+
+	SUBCASE("With borrow")
+	{
+		c.V[1] = 0x10;
+		c.V[2] = 0x20;
+		c.IR = 0x0120;
+
+		Handler_SUB_Vx_Vy(c);
+
+		CHECK_EQ(c.V[1], 0xF0); // 0x10 - 0x20 = 0xF0 (wrapped around)
+		CHECK_EQ(c.V[2], 0x20);
+		CHECK_EQ(c.V[0xF], 0);
+	}
+
+	SUBCASE("Vx == Vy")
+	{
+		c.V[1] = 0x10;
+		c.V[2] = 0x10;
+		c.IR = 0x0120;
+
+		Handler_SUB_Vx_Vy(c);
+
+		CHECK_EQ(c.V[1], 0);
+		CHECK_EQ(c.V[2], 0x10);
+		CHECK_EQ(c.V[0xF], 0);
+	}
+}
+
+TEST_CASE("Instruction: SHR Vx")
+{
+	SContext c{};
+
+	SUBCASE("LSB is 0")
+	{
+		c.V[1] = 0x10;
+		c.IR = 0x0100;
+
+		Handler_SHR_Vx(c);
+
+		CHECK_EQ(c.V[1], 0x08);
+		CHECK_EQ(c.V[0xF], 0);
+	}
+
+	SUBCASE("LSB is 1")
+	{
+		c.V[1] = 0x11;
+		c.IR = 0x0100;
+
+		Handler_SHR_Vx(c);
+
+		CHECK_EQ(c.V[1], 0x08);
+		CHECK_EQ(c.V[0xF], 1);
+	}
+}
+
+TEST_CASE("Instruction: SUBN Vx, Vy")
+{
+	SContext c{};
+
+	SUBCASE("Without borrow")
+	{
+		c.V[1] = 0x10;
+		c.V[2] = 0x20;
+		c.IR = 0x0120;
+
+		Handler_SUBN_Vx_Vy(c);
+
+		CHECK_EQ(c.V[1], 0x10);
+		CHECK_EQ(c.V[2], 0x20);
+		CHECK_EQ(c.V[0xF], 1);
+	}
+
+	SUBCASE("With borrow")
+	{
+		c.V[1] = 0x20;
+		c.V[2] = 0x10;
+		c.IR = 0x0120;
+
+		Handler_SUBN_Vx_Vy(c);
+
+		CHECK_EQ(c.V[1], 0xF0); // 0x10 - 0x20 = 0xF0 (wrapped around)
+		CHECK_EQ(c.V[2], 0x10);
+		CHECK_EQ(c.V[0xF], 0);
+	}
+
+	SUBCASE("Vx == Vy")
+	{
+		c.V[1] = 0x10;
+		c.V[2] = 0x10;
+		c.IR = 0x0120;
+
+		Handler_SUBN_Vx_Vy(c);
+
+		CHECK_EQ(c.V[1], 0);
+		CHECK_EQ(c.V[2], 0x10);
+		CHECK_EQ(c.V[0xF], 0);
+	}
+}
+
+TEST_CASE("Instruction: SHL Vx")
+{
+	SContext c{};
+
+	SUBCASE("MSB is 0")
+	{
+		c.V[1] = 0x10;
+		c.IR = 0x0100;
+
+		Handler_SHL_Vx(c);
+
+		CHECK_EQ(c.V[1], 0x20);
+		CHECK_EQ(c.V[0xF], 0);
+	}
+
+	SUBCASE("MSB is 1")
+	{
+		c.V[1] = 0x90;
+		c.IR = 0x0100;
+
+		Handler_SHL_Vx(c);
+
+		CHECK_EQ(c.V[1], 0x20);
+		CHECK_EQ(c.V[0xF], 1);
+	}
+}
+
+TEST_CASE("Instruction: SNE Vx, Vy")
+{
+	SContext c{};
+
+	SUBCASE("No Skip: Vx == Vy")
+	{
+		c.PC = 0;
+		c.V[1] = 0x10;
+		c.V[2] = 0x10;
+		c.IR = 0x0120;
+
+		Handler_SNE_Vx_Vy(c);
+
+		CHECK_EQ(c.PC, 0);
+	}
+
+	SUBCASE("Skip:    Vx != Vy")
+	{
+		c.PC = 0;
+		c.V[1] = 0x10;
+		c.V[2] = 0x20;
+		c.IR = 0x0120;
+
+		Handler_SNE_Vx_Vy(c);
+
+		CHECK_EQ(c.PC, InstructionByteSize);
+	}
+}
+
+TEST_CASE("Instruction: LD I, nnn")
+{
+	SContext c{};
+
+	c.I = 0;
+	c.IR = 0x0123;
+
+	Handler_LD_I_nnn(c);
+
+	CHECK_EQ(c.I, 0x123);
+}
+
+TEST_CASE("Instruction: JP V0, nnn")
+{
+	SContext c{};
+
+	c.PC = 0;
+	c.V[0] = 0x11;
+	c.IR = 0x0222;
+
+	Handler_JP_V0_nnn(c);
+
+	CHECK_EQ(c.PC, 0x233);
+}
+
+TEST_CASE("Instruction: RND Vx, kk")
+{
+	constexpr std::size_t N{ 1000 }; // Number of times to run this test
+
+	constexpr std::uint8_t kk{ 0b10100101 };
+	constexpr std::uint8_t kkInv{ gsl::narrow_cast<std::uint8_t>(~kk) };
+
+	SContext c{};
+	c.IR = 0x0100 | kk;
+
+	for (std::size_t i = 0; i < N; i++)
+	{
+		c.V[1] = 0;
+
+		Handler_RND_Vx_kk(c);
+
+		// check that all bits not set in `kk` are 0 in `Vx`
+		CHECK_EQ(c.V[1] & kkInv, 0);
+	}
+}
+
+TEST_CASE("Instruction: DRW Vx, Vy, n")
+{
+	constexpr std::size_t X{ 16 };
+	constexpr std::size_t Y{ 16 };
+	constexpr std::size_t W{ 5 };
+	constexpr std::size_t H{ 4 };
+	constexpr std::size_t N{ 4 };
+
+	SContext c{};
+	c.V[1] = X;
+	c.V[2] = Y;
+	c.IR = 0x0120 | N;
+	c.I = 0x400;
+	c.PixelBufferDirty = false;
+	c.V[0xF] = 0xCD;
+
+	constexpr std::array<std::uint8_t, N> InputSprite
+	{
+		0b01110000,
+		0b10011000,
+		0b11001000,
+		0b01110000,
+	};
+	std::copy(InputSprite.begin(), InputSprite.end(), c.Memory.begin() + c.I);
+
+	SUBCASE("Single draw")
+	{
+		Handler_DRW_Vx_Vy_n(c);
+
+		constexpr std::array<std::uint8_t, W * H> ExpectedValues
+		{
+			0,1,1,1,0,
+			1,0,0,1,1,
+			1,1,0,0,1,
+			0,1,1,1,0,
+		};
+		for (std::size_t y = 0; y < H; y++)
+		{
+			CHECK(std::equal(
+				ExpectedValues.begin() + W * y, ExpectedValues.begin() + W * (y + 1),
+				c.PixelBuffer.begin() + (X + (Y + y) * DisplayResolutionWidth)
+			));
+		}
+		CHECK(c.PixelBufferDirty);
+		CHECK_EQ(c.V[0xF], 0);
+	}
+
+	SUBCASE("Two draws (collision)")
+	{
+		Handler_DRW_Vx_Vy_n(c);
+
+		Handler_DRW_Vx_Vy_n(c);
+
+		constexpr std::array<std::uint8_t, W * H> ExpectedValues
+		{
+			0,0,0,0,0,
+			0,0,0,0,0,
+			0,0,0,0,0,
+			0,0,0,0,0,
+		};
+		for (std::size_t y = 0; y < H; y++)
+		{
+			CHECK(std::equal(
+				ExpectedValues.begin() + W * y, ExpectedValues.begin() + W * (y + 1),
+				c.PixelBuffer.begin() + (X + (Y + y) * DisplayResolutionWidth)
+			));
+		}
+		CHECK(c.PixelBufferDirty);
+		CHECK_EQ(c.V[0xF], 1);
+	}
+}
+
+TEST_CASE("Instruction: SKP Vx")
+{
+	SContext c{};
+
+	SUBCASE("Skip:    Key pressed")
+	{
+		c.Keyboard[8] = true;
+		c.V[1] = 8;
+		c.IR = 0x0100;
+		c.PC = 0;
+
+		Handler_SKP_Vx(c);
+
+		CHECK_EQ(c.PC, InstructionByteSize);
+	}
+
+	SUBCASE("No Skip: Key not pressed")
+	{
+		c.Keyboard[8] = false;
+		c.V[1] = 8;
+		c.IR = 0x0100;
+		c.PC = 0;
+
+		Handler_SKP_Vx(c);
+
+		CHECK_EQ(c.PC, 0);
+	}
+}
+
+TEST_CASE("Instruction: SKNP Vx")
+{
+	SContext c{};
+
+	SUBCASE("Skip:    Key not pressed")
+	{
+		c.Keyboard[8] = false;
+		c.V[1] = 8;
+		c.IR = 0x0100;
+		c.PC = 0;
+
+		Handler_SKNP_Vx(c);
+
+		CHECK_EQ(c.PC, InstructionByteSize);
+	}
+
+	SUBCASE("No Skip: Key pressed")
+	{
+		c.Keyboard[8] = true;
+		c.V[1] = 8;
+		c.IR = 0x0100;
+		c.PC = 0;
+
+		Handler_SKNP_Vx(c);
+
+		CHECK_EQ(c.PC, 0);
+	}
+}
+
+TEST_CASE("Instruction: LD Vx, DT")
+{
+	SContext c{};
+
+	c.V[1] = 0;
+	c.DT = 0x12;
+	c.IR = 0x0100;
+
+	Handler_LD_Vx_DT(c);
+
+	CHECK_EQ(c.V[1], 0x12);
+	CHECK_EQ(c.DT, 0x12);
+}
+
+TEST_CASE("Instruction: LD Vx, K")
+{
+	SContext c{};
+
+	SUBCASE("No key pressed")
+	{
+		c.V[1] = 0;
+		c.IR = 0x0100;
+		c.PC = 8;
+		std::fill(c.Keyboard.begin(), c.Keyboard.end(), false);
+
+		Handler_LD_Vx_K(c);
+
+		CHECK_EQ(c.V[1], 0);
+		CHECK_EQ(c.PC, 8 - InstructionByteSize);
+	}
+
+	SUBCASE("Key pressed")
+	{
+		c.V[1] = 0;
+		c.IR = 0x0100;
+		c.PC = 8;
+		std::fill(c.Keyboard.begin(), c.Keyboard.end(), false);
+		c.Keyboard[8] = true;
+
+		Handler_LD_Vx_K(c);
+
+		CHECK_EQ(c.V[1], 8);
+		CHECK_EQ(c.PC, 8);
+	}
+}
+
+TEST_CASE("Instruction: LD DT, Vx")
+{
+	SContext c{};
+
+	c.V[1] = 0x12;
+	c.DT = 0;
+	c.IR = 0x0100;
+
+	Handler_LD_DT_Vx(c);
+
+	CHECK_EQ(c.V[1], 0x12);
+	CHECK_EQ(c.DT, 0x12);
+}
+
+TEST_CASE("Instruction: LD ST, Vx")
+{
+	SContext c{};
+
+	c.V[1] = 0x12;
+	c.ST = 0;
+	c.IR = 0x0100;
+
+	Handler_LD_ST_Vx(c);
+
+	CHECK_EQ(c.V[1], 0x12);
+	CHECK_EQ(c.ST, 0x12);
+}
+
+TEST_CASE("Instruction: ADD I, Vx")
+{
+	SContext c{};
+
+	c.V[1] = 0x20;
+	c.I = 0x10;
+	c.IR = 0x0100;
+
+	Handler_ADD_I_Vx(c);
+
+	CHECK_EQ(c.V[1], 0x20);
+	CHECK_EQ(c.I, 0x30);
+}
+
+TEST_CASE("Instruction: LD F, Vx")
+{
+	SContext c{};
+
+	SUBCASE("Valid font chars")
+	{
+		for (std::size_t digit = 0; digit < FontsetCharCount; digit++)
+		{
+			c.V[1] = gsl::narrow<std::uint8_t>(digit);
+			c.I = 0;
+			c.IR = 0x0100;
+
+			Handler_LD_F_Vx(c);
+
+			CHECK_EQ(c.V[1], digit);
+			CHECK_EQ(c.I, digit * FontsetCharByteSize);
+		}
+	}
+
+	SUBCASE("Invalid font chars")
+	{
+		c.V[1] = FontsetCharCount;
+		c.I = 0;
+		c.IR = 0x0100;
+
+		CHECK_THROWS(Handler_LD_F_Vx(c));
+
+		c.V[1] = FontsetCharCount + 10;
+		c.I = 0;
+		c.IR = 0x0100;
+
+		CHECK_THROWS(Handler_LD_F_Vx(c));
+	}
+}
+
+TEST_CASE("Instruction: LD B, Vx")
+{
+	SContext c{};
+	c.I = 0x400;
+	c.Memory[c.I + 0] = 0;
+	c.Memory[c.I + 1] = 0;
+	c.Memory[c.I + 2] = 0;
+	c.IR = 0x0100;
+
+	SUBCASE("No digits")
+	{
+		c.V[1] = 000;
+
+		Handler_LD_B_Vx(c);
+
+		CHECK_EQ(c.Memory[c.I + 0], 0);
+		CHECK_EQ(c.Memory[c.I + 1], 0);
+		CHECK_EQ(c.Memory[c.I + 2], 0);
+	}
+
+	SUBCASE("Ones digit only")
+	{
+		c.V[1] = 1;
+		
+		Handler_LD_B_Vx(c);
+
+		CHECK_EQ(c.Memory[c.I + 0], 0);
+		CHECK_EQ(c.Memory[c.I + 1], 0);
+		CHECK_EQ(c.Memory[c.I + 2], 1);
+	}
+
+	SUBCASE("Tens digit only")
+	{
+		c.V[1] = 10;
+
+		Handler_LD_B_Vx(c);
+
+		CHECK_EQ(c.Memory[c.I + 0], 0);
+		CHECK_EQ(c.Memory[c.I + 1], 1);
+		CHECK_EQ(c.Memory[c.I + 2], 0);
+	}
+
+	SUBCASE("Hundreds digit only")
+	{
+		c.V[1] = 100;
+
+		Handler_LD_B_Vx(c);
+
+		CHECK_EQ(c.Memory[c.I + 0], 1);
+		CHECK_EQ(c.Memory[c.I + 1], 0);
+		CHECK_EQ(c.Memory[c.I + 2], 0);
+	}
+
+	SUBCASE("All digits")
+	{
+		c.V[1] = 123;
+
+		Handler_LD_B_Vx(c);
+
+		CHECK_EQ(c.Memory[c.I + 0], 1);
+		CHECK_EQ(c.Memory[c.I + 1], 2);
+		CHECK_EQ(c.Memory[c.I + 2], 3);
+	}
+}
+
+TEST_CASE("Instruction: LD [I], Vx")
+{
+	SContext c{};
+
+	c.I = 0x400;
+
+	SUBCASE("Single register")
+	{
+		constexpr std::array<std::uint8_t, NumberOfRegisters> InputValues
+		{
+			0x10, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD,
+			0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD,
+		};
+		std::copy(InputValues.begin(), InputValues.end(), c.V.begin());
+		c.IR = 0x0000;
+
+		Handler_LD_derefI_Vx(c);
+
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedValues
+		{
+			0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		};
+		CHECK(std::equal(ExpectedValues.begin(), ExpectedValues.end(), c.Memory.begin() + c.I));
+	}
+
+	SUBCASE("Multiple registers")
+	{
+		constexpr std::array<std::uint8_t, NumberOfRegisters> InputValues
+		{
+			0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80,
+			0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD,
+		};
+		std::copy(InputValues.begin(), InputValues.end(), c.V.begin());
+		c.IR = 0x0700;
+
+		Handler_LD_derefI_Vx(c);
+
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedValues
+		{
+			0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		};
+		CHECK(std::equal(ExpectedValues.begin(), ExpectedValues.end(), c.Memory.begin() + c.I));
+	}
+
+	SUBCASE("All registers")
+	{
+		constexpr std::array<std::uint8_t, NumberOfRegisters> InputValues
+		{
+			0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80,
+			0x90, 0xA0, 0xB0, 0xC0, 0xD0, 0xE0, 0xF0, 0xFF,
+		};
+		std::copy(InputValues.begin(), InputValues.end(), c.V.begin());
+		c.IR = 0x0F00;
+
+		Handler_LD_derefI_Vx(c);
+
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedValues
+		{
+			0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80,
+			0x90, 0xA0, 0xB0, 0xC0, 0xD0, 0xE0, 0xF0, 0xFF,
+		};
+		CHECK(std::equal(ExpectedValues.begin(), ExpectedValues.end(), c.Memory.begin() + c.I));
+	}
+}
+
+TEST_CASE("Instruction: LD Vx, [I]")
+{
+	SContext c{};
+
+	c.I = 0x400;
+
+	SUBCASE("Single register")
+	{
+		constexpr std::array<std::uint8_t, NumberOfRegisters> InputValues
+		{
+			0x10, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD,
+			0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD,
+		};
+		std::copy(InputValues.begin(), InputValues.end(), c.Memory.begin() + c.I);
+		c.IR = 0x0000;
+
+		Handler_LD_Vx_derefI(c);
+
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedValues
+		{
+			0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		};
+		CHECK(std::equal(ExpectedValues.begin(), ExpectedValues.end(), c.V.begin()));
+	}
+
+	SUBCASE("Multiple registers")
+	{
+		constexpr std::array<std::uint8_t, NumberOfRegisters> InputValues
+		{
+			0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80,
+			0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD,
+		};
+		std::copy(InputValues.begin(), InputValues.end(), c.Memory.begin() + c.I);
+		c.IR = 0x0700;
+
+		Handler_LD_Vx_derefI(c);
+
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedValues
+		{
+			0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		};
+		CHECK(std::equal(ExpectedValues.begin(), ExpectedValues.end(), c.V.begin()));
+	}
+
+	SUBCASE("All registers")
+	{
+		constexpr std::array<std::uint8_t, NumberOfRegisters> InputValues
+		{
+			0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80,
+			0x90, 0xA0, 0xB0, 0xC0, 0xD0, 0xE0, 0xF0, 0xFF,
+		};
+		std::copy(InputValues.begin(), InputValues.end(), c.Memory.begin() + c.I);
+		c.IR = 0x0F00;
+
+		Handler_LD_Vx_derefI(c);
+
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedValues
+		{
+			0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80,
+			0x90, 0xA0, 0xB0, 0xC0, 0xD0, 0xE0, 0xF0, 0xFF,
+		};
+		CHECK(std::equal(ExpectedValues.begin(), ExpectedValues.end(), c.V.begin()));
+	}
+}
+
+TEST_SUITE_END();
