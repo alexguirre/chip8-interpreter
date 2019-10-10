@@ -1079,3 +1079,17 @@ TEST_CASE("Instruction: LD ST, Vx")
 	CHECK_EQ(c.V[1], 0x12);
 	CHECK_EQ(c.ST, 0x12);
 }
+
+TEST_CASE("Instruction: ADD I, Vx")
+{
+	SContext c{};
+
+	c.V[1] = 0x20;
+	c.I = 0x10;
+	c.IR = 0x0100;
+
+	Handler_ADD_I_Vx(c);
+
+	CHECK_EQ(c.V[1], 0x20);
+	CHECK_EQ(c.I, 0x30);
+}
