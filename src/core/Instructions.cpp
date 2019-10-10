@@ -952,7 +952,77 @@ TEST_CASE("Instruction: RND Vx, kk")
 	}
 }
 
-// TODO: DRW Vx, Vy, n
+TEST_CASE("Instruction: DRW Vx, Vy, n")
+{
+	constexpr std::size_t X{ 16 };
+	constexpr std::size_t Y{ 16 };
+	constexpr std::size_t W{ 5 };
+	constexpr std::size_t H{ 4 };
+	constexpr std::size_t N{ 4 };
+
+	SContext c{};
+	c.V[1] = X;
+	c.V[2] = Y;
+	c.IR = 0x0120 | N;
+	c.I = 0x400;
+	c.PixelBufferDirty = false;
+	c.V[0xF] = 0xCD;
+
+	constexpr std::array<std::uint8_t, N> InputSprite
+	{
+		0b01110000,
+		0b10011000,
+		0b11001000,
+		0b01110000,
+	};
+	std::copy(InputSprite.begin(), InputSprite.end(), c.Memory.begin() + c.I);
+
+	SUBCASE("Single draw")
+	{
+		Handler_DRW_Vx_Vy_n(c);
+
+		constexpr std::array<std::uint8_t, W * H> ExpectedValues
+		{
+			0,1,1,1,0,
+			1,0,0,1,1,
+			1,1,0,0,1,
+			0,1,1,1,0,
+		};
+		for (std::size_t y = 0; y < H; y++)
+		{
+			CHECK(std::equal(
+				ExpectedValues.begin() + W * y, ExpectedValues.begin() + W * (y + 1),
+				c.PixelBuffer.begin() + (X + (Y + y) * DisplayResolutionWidth)
+			));
+		}
+		CHECK(c.PixelBufferDirty);
+		CHECK_EQ(c.V[0xF], 0);
+	}
+
+	SUBCASE("Two draws (collision)")
+	{
+		Handler_DRW_Vx_Vy_n(c);
+
+		Handler_DRW_Vx_Vy_n(c);
+
+		constexpr std::array<std::uint8_t, W * H> ExpectedValues
+		{
+			0,0,0,0,0,
+			0,0,0,0,0,
+			0,0,0,0,0,
+			0,0,0,0,0,
+		};
+		for (std::size_t y = 0; y < H; y++)
+		{
+			CHECK(std::equal(
+				ExpectedValues.begin() + W * y, ExpectedValues.begin() + W * (y + 1),
+				c.PixelBuffer.begin() + (X + (Y + y) * DisplayResolutionWidth)
+			));
+		}
+		CHECK(c.PixelBufferDirty);
+		CHECK_EQ(c.V[0xF], 1);
+	}
+}
 
 TEST_CASE("Instruction: SKP Vx")
 {
