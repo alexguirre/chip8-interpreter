@@ -965,7 +965,6 @@ TEST_CASE("Instruction: RND Vx, kk")
 
 TEST_CASE("Instruction: DRW Vx, Vy, n")
 {
-	// TODO: add tests for extended screen mode
 	// TODO: add tests for wrap around
 
 	constexpr std::size_t X{ 16 };
@@ -1031,6 +1030,59 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 			CHECK(std::equal(
 				ExpectedValues.begin() + W * y, ExpectedValues.begin() + W * (y + 1),
 				c.Display.PixelBuffer.begin() + (X + (Y + y) * c.Display.Width())
+			));
+		}
+		CHECK(c.Display.PixelBufferDirty);
+		CHECK_EQ(c.V[0xF], 1);
+	}
+
+	constexpr std::size_t X2{ 70 };
+	constexpr std::size_t Y2{ 40 };
+
+	c.V[1] = X2;
+	c.V[2] = Y2;
+	c.Display.ExtendedMode = true;
+
+	SUBCASE("Single draw (extended mode)")
+	{
+		Handler_DRW_Vx_Vy_n(c);
+
+		constexpr std::array<std::uint8_t, W * H> ExpectedValues
+		{
+			0,1,1,1,0,
+			1,0,0,1,1,
+			1,1,0,0,1,
+			0,1,1,1,0,
+		};
+		for (std::size_t y = 0; y < H; y++)
+		{
+			CHECK(std::equal(
+				ExpectedValues.begin() + W * y, ExpectedValues.begin() + W * (y + 1),
+				c.Display.PixelBuffer.begin() + (X2 + (Y2 + y) * c.Display.Width())
+			));
+		}
+		CHECK(c.Display.PixelBufferDirty);
+		CHECK_EQ(c.V[0xF], 0);
+	}
+
+	SUBCASE("Two draws (extended mode, collision)")
+	{
+		Handler_DRW_Vx_Vy_n(c);
+
+		Handler_DRW_Vx_Vy_n(c);
+
+		constexpr std::array<std::uint8_t, W * H> ExpectedValues
+		{
+			0,0,0,0,0,
+			0,0,0,0,0,
+			0,0,0,0,0,
+			0,0,0,0,0,
+		};
+		for (std::size_t y = 0; y < H; y++)
+		{
+			CHECK(std::equal(
+				ExpectedValues.begin() + W * y, ExpectedValues.begin() + W * (y + 1),
+				c.Display.PixelBuffer.begin() + (X2 + (Y2 + y) * c.Display.Width())
 			));
 		}
 		CHECK(c.Display.PixelBufferDirty);
