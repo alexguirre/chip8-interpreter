@@ -11,7 +11,6 @@ namespace c8
 	{
 		ExtendedMode = false;
 		std::fill(PixelBuffer.begin(), PixelBuffer.end(), std::uint8_t(0));
-		PixelBufferDirty = true;
 	}
 
 	SContext::SContext()
@@ -31,6 +30,7 @@ namespace c8
 		std::fill(Stack.begin(), Stack.end(), std::uint16_t(0));
 		std::fill(Memory.begin(), Memory.end(), std::uint8_t(0));
 		Display.Reset();
+		DisplayChanged = true;
 		std::fill(Keyboard.begin(), Keyboard.end(), false);
 
 		std::copy(constants::Fontset.begin(), constants::Fontset.end(), Memory.begin());

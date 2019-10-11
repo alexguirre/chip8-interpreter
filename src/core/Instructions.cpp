@@ -79,7 +79,7 @@ static std::string ToString_NAME_n(const SInstruction&, const SContext&)
 static void Handler_CLS(SContext& c)
 {
 	std::fill(c.Display.PixelBuffer.begin(), c.Display.PixelBuffer.end(), std::uint8_t(0));
-	c.Display.PixelBufferDirty = true;
+	c.DisplayChanged = true;
 }
 
 static void Handler_RET(SContext& c)
@@ -252,7 +252,7 @@ static void Handler_DRW_Vx_Vy_n(SContext& c)
 			pixel ^= bit;
 		}
 	}
-	c.Display.PixelBufferDirty = true;
+	c.DisplayChanged = true;
 }
 
 static void Handler_SKP_Vx(SContext& c)
@@ -375,16 +375,22 @@ static void Handler_EXIT(SContext&)
 	throw std::runtime_error("Function not yet implemented");
 }
 
-static void Handler_LOW(SContext&)
+static void Handler_LOW(SContext& c)
 {
-	// TODO: 00FE - LOW				- Disable extended screen mode
-	throw std::runtime_error("Function not yet implemented");
+	if (c.Display.ExtendedMode)
+	{
+		c.Display.ExtendedMode = false;
+		c.DisplayChanged = true;
+	}
 }
 
-static void Handler_HIGH(SContext&)
+static void Handler_HIGH(SContext& c)
 {
-	// TODO: 00FF - HIGH			- Enable extended screen mode for full-screen graphics
-	throw std::runtime_error("Function not yet implemented");
+	if (!c.Display.ExtendedMode)
+	{
+		c.Display.ExtendedMode = true;
+		c.DisplayChanged = true;
+	}
 }
 
 static void Handler_LD_HF_Vx(SContext&)
@@ -527,7 +533,7 @@ TEST_CASE("Instruction: CLS")
 
 	Handler_CLS(c);
 	
-	CHECK(c.Display.PixelBufferDirty);
+	CHECK(c.DisplayChanged);
 	CHECK(std::all_of(c.Display.PixelBuffer.begin(), c.Display.PixelBuffer.end(), [](std::uint8_t b) { return b == 0; }));
 }
 
@@ -1041,7 +1047,7 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 	c.V[2] = Y;
 	c.IR = 0x0120 | N;
 	c.I = 0x400;
-	c.Display.PixelBufferDirty = false;
+	c.DisplayChanged = false;
 	c.V[0xF] = 0xCD;
 
 	constexpr std::array<std::uint8_t, N> InputSprite
@@ -1071,7 +1077,7 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 				c.Display.PixelBuffer.begin() + (X + (Y + y) * c.Display.Width())
 			));
 		}
-		CHECK(c.Display.PixelBufferDirty);
+		CHECK(c.DisplayChanged);
 		CHECK_EQ(c.V[0xF], 0);
 	}
 
@@ -1095,7 +1101,7 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 				c.Display.PixelBuffer.begin() + (X + (Y + y) * c.Display.Width())
 			));
 		}
-		CHECK(c.Display.PixelBufferDirty);
+		CHECK(c.DisplayChanged);
 		CHECK_EQ(c.V[0xF], 1);
 	}
 
@@ -1124,7 +1130,7 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 				c.Display.PixelBuffer.begin() + (X2 + (Y2 + y) * c.Display.Width())
 			));
 		}
-		CHECK(c.Display.PixelBufferDirty);
+		CHECK(c.DisplayChanged);
 		CHECK_EQ(c.V[0xF], 0);
 	}
 
@@ -1148,7 +1154,7 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 				c.Display.PixelBuffer.begin() + (X2 + (Y2 + y) * c.Display.Width())
 			));
 		}
-		CHECK(c.Display.PixelBufferDirty);
+		CHECK(c.DisplayChanged);
 		CHECK_EQ(c.V[0xF], 1);
 	}
 }
@@ -1530,6 +1536,58 @@ TEST_CASE("Instruction: LD Vx, [I]")
 			0x90, 0xA0, 0xB0, 0xC0, 0xD0, 0xE0, 0xF0, 0xFF,
 		};
 		CHECK(std::equal(ExpectedValues.begin(), ExpectedValues.end(), c.V.begin()));
+	}
+}
+
+TEST_CASE("Instruction: LOW")
+{
+	SContext c{};
+	c.DisplayChanged = false;
+
+	SUBCASE("Extended mode disabled")
+	{
+		c.Display.ExtendedMode = false;
+
+		Handler_LOW(c);
+
+		CHECK_EQ(c.Display.ExtendedMode, false);
+		CHECK_EQ(c.DisplayChanged, false);
+	}
+
+	SUBCASE("Extended mode enabled")
+	{
+		c.Display.ExtendedMode = true;
+
+		Handler_LOW(c);
+
+		CHECK_EQ(c.Display.ExtendedMode, false);
+		CHECK_EQ(c.DisplayChanged, true);
+	}
+}
+
+TEST_CASE("Instruction: HIGH")
+{
+	SContext c{};
+	c.DisplayChanged = false;
+
+	SUBCASE("Extended mode disabled")
+	{
+		c.Display.ExtendedMode = false;
+
+		Handler_HIGH(c);
+
+		CHECK_EQ(c.Display.ExtendedMode, true);
+		CHECK_EQ(c.DisplayChanged, true);
+	}
+
+	SUBCASE("Extended mode enabled")
+	{
+		c.Display.ExtendedMode = true;
+
+		Handler_HIGH(c);
+
+		CHECK_EQ(c.Display.ExtendedMode, true);
+		CHECK_EQ(c.DisplayChanged, false);
 	}
 }
 

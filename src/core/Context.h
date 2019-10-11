@@ -12,7 +12,6 @@ namespace c8
 	{
 		bool ExtendedMode;
 		SDisplayPixelBuffer PixelBuffer;
-		bool PixelBufferDirty;
 
 		SDisplay();
 
@@ -34,6 +33,7 @@ namespace c8
 		std::array<std::uint16_t, constants::StackSize> Stack;
 		std::array<std::uint8_t, constants::MemorySize> Memory;
 		SDisplay Display;
+		bool DisplayChanged;
 		SKeyboardState Keyboard;
 
 		SContext();

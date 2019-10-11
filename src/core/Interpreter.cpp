@@ -65,10 +65,10 @@ namespace c8
 		instr.Handler(c);
 
 		// update display
-		if (mContext.Display.PixelBufferDirty)
+		if (mContext.DisplayChanged)
 		{
 			mPlatform->UpdateDisplay(mContext.Display);
-			mContext.Display.PixelBufferDirty = false;
+			mContext.DisplayChanged = false;
 		}
 	}
 
@@ -136,7 +136,7 @@ namespace c8
 		file.read(reinterpret_cast<std::uint8_t*>(&c.Display.ExtendedMode), sizeof(c.Display.ExtendedMode));
 		file.read(c.Display.PixelBuffer.data(), c.Display.PixelBuffer.size() * sizeof(std::uint8_t));
 
-		c.Display.PixelBufferDirty = true;
+		c.DisplayChanged = true;
 	}
 
 	void CInterpreter::SaveState(const std::filesystem::path& filePath) const
