@@ -73,8 +73,8 @@ static std::string ToString_NAME_dst_Vx(const SInstruction& i, const SContext& c
 
 static void Handler_CLS(SContext& c)
 {
-	std::fill(c.PixelBuffer.begin(), c.PixelBuffer.end(), std::uint8_t(0));
-	c.PixelBufferDirty = true;
+	std::fill(c.Display.PixelBuffer.begin(), c.Display.PixelBuffer.end(), std::uint8_t(0));
+	c.Display.PixelBufferDirty = true;
 }
 
 static void Handler_RET(SContext& c)
@@ -232,9 +232,9 @@ static void Handler_DRW_Vx_Vy_n(SContext& c)
 		for (std::size_t bitIndex = 0; bitIndex < 8; bitIndex++)
 		{
 			const std::uint8_t bit = (byte >> (7 - bitIndex)) & 1;
-			const std::size_t x = (vx + bitIndex) % DisplayResolutionWidth;
-			const std::size_t y = (vy + byteIndex) % DisplayResolutionHeight;
-			std::uint8_t& pixel = c.PixelBuffer[x + y * DisplayResolutionWidth];
+			const std::size_t x = (vx + bitIndex) % c.Display.Width();
+			const std::size_t y = (vy + byteIndex) % c.Display.Height();
+			std::uint8_t& pixel = c.Display.PixelBuffer[x + y * c.Display.Width()];
 
 			// collision
 			if (bit && pixel)
@@ -245,7 +245,7 @@ static void Handler_DRW_Vx_Vy_n(SContext& c)
 			pixel ^= bit;
 		}
 	}
-	c.PixelBufferDirty = true;
+	c.Display.PixelBufferDirty = true;
 }
 
 static void Handler_SKP_Vx(SContext& c)
@@ -460,12 +460,12 @@ TEST_SUITE_BEGIN("Instruction set");
 TEST_CASE("Instruction: CLS")
 {
 	SContext c{};
-	std::fill(c.PixelBuffer.begin(), c.PixelBuffer.end(), std::uint8_t{ 1 });
+	std::fill(c.Display.PixelBuffer.begin(), c.Display.PixelBuffer.end(), std::uint8_t{ 1 });
 
 	Handler_CLS(c);
 	
-	CHECK(c.PixelBufferDirty);
-	CHECK(std::all_of(c.PixelBuffer.begin(), c.PixelBuffer.end(), [](std::uint8_t b) { return b == 0; }));
+	CHECK(c.Display.PixelBufferDirty);
+	CHECK(std::all_of(c.Display.PixelBuffer.begin(), c.Display.PixelBuffer.end(), [](std::uint8_t b) { return b == 0; }));
 }
 
 TEST_CASE("Instruction: RET")
@@ -965,6 +965,9 @@ TEST_CASE("Instruction: RND Vx, kk")
 
 TEST_CASE("Instruction: DRW Vx, Vy, n")
 {
+	// TODO: add tests for extended screen mode
+	// TODO: add tests for wrap around
+
 	constexpr std::size_t X{ 16 };
 	constexpr std::size_t Y{ 16 };
 	constexpr std::size_t W{ 5 };
@@ -976,7 +979,7 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 	c.V[2] = Y;
 	c.IR = 0x0120 | N;
 	c.I = 0x400;
-	c.PixelBufferDirty = false;
+	c.Display.PixelBufferDirty = false;
 	c.V[0xF] = 0xCD;
 
 	constexpr std::array<std::uint8_t, N> InputSprite
@@ -1003,10 +1006,10 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 		{
 			CHECK(std::equal(
 				ExpectedValues.begin() + W * y, ExpectedValues.begin() + W * (y + 1),
-				c.PixelBuffer.begin() + (X + (Y + y) * DisplayResolutionWidth)
+				c.Display.PixelBuffer.begin() + (X + (Y + y) * c.Display.Width())
 			));
 		}
-		CHECK(c.PixelBufferDirty);
+		CHECK(c.Display.PixelBufferDirty);
 		CHECK_EQ(c.V[0xF], 0);
 	}
 
@@ -1027,10 +1030,10 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 		{
 			CHECK(std::equal(
 				ExpectedValues.begin() + W * y, ExpectedValues.begin() + W * (y + 1),
-				c.PixelBuffer.begin() + (X + (Y + y) * DisplayResolutionWidth)
+				c.Display.PixelBuffer.begin() + (X + (Y + y) * c.Display.Width())
 			));
 		}
-		CHECK(c.PixelBufferDirty);
+		CHECK(c.Display.PixelBufferDirty);
 		CHECK_EQ(c.V[0xF], 1);
 	}
 }

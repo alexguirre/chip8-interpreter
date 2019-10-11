@@ -25,6 +25,6 @@ public:
 	inline CSound& Sound() { return *mSound; }
 	
 	void GetKeyboardState(c8::SKeyboardState& dest) override;
-	void UpdateDisplay(const c8::SDisplayPixelBuffer& pixelBuffer) override;
+	void UpdateDisplay(const c8::SDisplay& display) override;
 	void Beep(double frequency, std::chrono::milliseconds duration) override;
 };

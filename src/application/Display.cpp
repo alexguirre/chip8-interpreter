@@ -6,7 +6,8 @@
 using namespace c8::constants;
 
 CDisplay::CDisplay()
-	: mPixelBuffers{}, mNextPixelBuffer{ 0 }
+	: mPixelBuffers{}, mNextPixelBuffer{ 0 }, mExtendedMode{ false },
+	mLogicalWidth{ DisplayResolutionWidth }, mLogicalHeight{ DisplayResolutionHeight }
 {
 	mWindow = SDL_CreateWindow(
 		"chip8-interpreter",
@@ -30,7 +31,7 @@ CDisplay::CDisplay()
 		throw std::runtime_error("Failed to create renderer: " + std::string(SDL_GetError()));
 	}
 
-	SDL_RenderSetLogicalSize(mRenderer, DisplayResolutionWidth, DisplayResolutionHeight);
+	SDL_RenderSetLogicalSize(mRenderer, gsl::narrow<int>(mLogicalWidth), gsl::narrow<int>(mLogicalHeight));
 }
 
 CDisplay::~CDisplay()
@@ -53,15 +54,15 @@ void CDisplay::Render()
 		std::get<2>(BackColor), std::get<3>(BackColor));
 	SDL_RenderClear(mRenderer);
 
-	constexpr std::size_t MaxRects{  DisplayResolutionWidth * DisplayResolutionHeight };
+	constexpr std::size_t MaxRects{ schip::ExtendedDisplayResolutionWidth * schip::ExtendedDisplayResolutionHeight };
 	std::array<SDL_Rect, MaxRects> rects;
 	std::size_t rectCount = 0;
 
-	for (std::size_t y = 0; y < DisplayResolutionHeight; y++)
+	for (std::size_t y = 0; y < mLogicalHeight; y++)
 	{
-		for (std::size_t x = 0; x < DisplayResolutionWidth; x++)
+		for (std::size_t x = 0; x < mLogicalWidth; x++)
 		{
-			const std::size_t pixelIndex = x + y * DisplayResolutionWidth;
+			const std::size_t pixelIndex = x + y * mLogicalWidth;
 			
 			// check if the pixel is set in any of the buffers
 			if (std::any_of(mPixelBuffers.begin(), mPixelBuffers.end(), [pixelIndex](const auto& buffer)
@@ -82,6 +83,26 @@ void CDisplay::Render()
 		std::get<2>(ForeColor), std::get<3>(ForeColor));
 	SDL_RenderFillRects(mRenderer, rects.data(), static_cast<int>(rectCount));
 	SDL_RenderPresent(mRenderer);
+}
+
+void CDisplay::SetExtendedMode(bool extendedMode)
+{
+	if (mExtendedMode != extendedMode)
+	{
+		mExtendedMode = extendedMode;
+		if (extendedMode)
+		{
+			mLogicalWidth = schip::ExtendedDisplayResolutionWidth;
+			mLogicalHeight = schip::ExtendedDisplayResolutionHeight;
+		}
+		else
+		{
+			mLogicalWidth = DisplayResolutionWidth;
+			mLogicalHeight = DisplayResolutionHeight;
+		}
+
+		SDL_RenderSetLogicalSize(mRenderer, gsl::narrow<int>(mLogicalWidth), gsl::narrow<int>(mLogicalHeight));
+	}
 }
 
 void CDisplay::UpdatePixelBuffer(const c8::SDisplayPixelBuffer& src)
