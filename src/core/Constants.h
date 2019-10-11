@@ -249,5 +249,8 @@ namespace c8::constants
 			0b11000000,
 			0b11000000,
 		};
+
+		constexpr std::size_t ExtendedDisplayResolutionWidth{ 128 };
+		constexpr std::size_t ExtendedDisplayResolutionHeight{ 64 };
 	}
 }
