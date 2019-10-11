@@ -346,6 +346,17 @@ using namespace std::placeholders;
 
 namespace c8
 {
+	// TODO: 00Cn - SCD nibble		- Scroll display N lines down
+	// TODO: 00FB - SCR				- Scroll display 4 pixels right
+	// TODO: 00FC - SCL				- Scroll display 4 pixels left
+	// TODO: 00FD - EXIT			- Exit CHIP interpreter
+	// TODO: 00FE - LOW				- Disable extended screen mode
+	// TODO: 00FF - HIGH			- Enable extended screen mode for full-screen graphics
+	// TODO: Dxy0 - DRW Vx, Vy, 0	- Show N-byte sprite from M(I) at coords (VX,VY), VF := collision. If N=0 and extended mode, show 16x16 sprite.
+	// TODO: Fx30 - LD HF, Vx		- Point I to 10-byte font sprite for digit VX (0..9)
+	// TODO: Fx75 - LD R, Vx		- Store V0..VX in RPL user flags (X <= 7)
+	// TODO: Fx85 - LD Vx, R		- Read V0..VX from RPL user flags (X <= 7)
+
 	const std::vector<SInstruction> SInstruction::InstructionSet =
 	{
 		{ "CLS",	Handler_CLS,			0x00E0,	0xF0FF,	ToString_NAME									},
