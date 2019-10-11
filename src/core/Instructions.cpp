@@ -71,6 +71,11 @@ static std::string ToString_NAME_dst_Vx(const SInstruction& i, const SContext& c
 	return ss.str();
 }
 
+static std::string ToString_NAME_n(const SInstruction&, const SContext&)
+{
+	throw std::runtime_error("Function not yet implemented");
+}
+
 static void Handler_CLS(SContext& c)
 {
 	std::fill(c.Display.PixelBuffer.begin(), c.Display.PixelBuffer.end(), std::uint8_t(0));
@@ -220,6 +225,8 @@ static void Handler_RND_Vx_kk(SContext& c)
 
 static void Handler_DRW_Vx_Vy_n(SContext& c)
 {
+	// TODO: Dxy0 - DRW Vx, Vy, 0	- Show N-byte sprite from M(I) at coords (VX,VY), VF := collision. If N=0 and extended mode, show 16x16 sprite.
+
 	const std::uint8_t vx = c.V[c.X()];
 	const std::uint8_t vy = c.V[c.Y()];
 	const std::uint8_t n = c.N();
@@ -342,21 +349,66 @@ static void Handler_LD_Vx_derefI(SContext& c)
 	}
 }
 
+/*** SuperChip Instructions ***/
+
+static void Handler_SCD_n(SContext&)
+{
+	// TODO: 00Cn - SCD nibble		- Scroll display N lines down
+	throw std::runtime_error("Function not yet implemented");
+}
+
+static void Handler_SCR(SContext&)
+{
+	// TODO: 00FB - SCR				- Scroll display 4 pixels right
+	throw std::runtime_error("Function not yet implemented");
+}
+
+static void Handler_SCL(SContext&)
+{
+	// TODO: 00FC - SCL				- Scroll display 4 pixels left
+	throw std::runtime_error("Function not yet implemented");
+}
+
+static void Handler_EXIT(SContext&)
+{
+	// TODO: 00FD - EXIT			- Exit CHIP interpreter
+	throw std::runtime_error("Function not yet implemented");
+}
+
+static void Handler_LOW(SContext&)
+{
+	// TODO: 00FE - LOW				- Disable extended screen mode
+	throw std::runtime_error("Function not yet implemented");
+}
+
+static void Handler_HIGH(SContext&)
+{
+	// TODO: 00FF - HIGH			- Enable extended screen mode for full-screen graphics
+	throw std::runtime_error("Function not yet implemented");
+}
+
+static void Handler_LD_HF_Vx(SContext&)
+{
+	// TODO: Fx30 - LD HF, Vx		- Point I to 10-byte font sprite for digit VX (0..9)
+	throw std::runtime_error("Function not yet implemented");
+}
+
+static void Handler_LD_R_Vx(SContext&)
+{
+	// TODO: Fx75 - LD R, Vx		- Store V0..VX in RPL user flags (X <= 7)
+	throw std::runtime_error("Function not yet implemented");
+}
+
+static void Handler_LD_Vx_R(SContext&)
+{
+	// TODO: Fx85 - LD Vx, R		- Read V0..VX from RPL user flags (X <= 7)
+	throw std::runtime_error("Function not yet implemented");
+}
+
 using namespace std::placeholders;
 
 namespace c8
 {
-	// TODO: 00Cn - SCD nibble		- Scroll display N lines down
-	// TODO: 00FB - SCR				- Scroll display 4 pixels right
-	// TODO: 00FC - SCL				- Scroll display 4 pixels left
-	// TODO: 00FD - EXIT			- Exit CHIP interpreter
-	// TODO: 00FE - LOW				- Disable extended screen mode
-	// TODO: 00FF - HIGH			- Enable extended screen mode for full-screen graphics
-	// TODO: Dxy0 - DRW Vx, Vy, 0	- Show N-byte sprite from M(I) at coords (VX,VY), VF := collision. If N=0 and extended mode, show 16x16 sprite.
-	// TODO: Fx30 - LD HF, Vx		- Point I to 10-byte font sprite for digit VX (0..9)
-	// TODO: Fx75 - LD R, Vx		- Store V0..VX in RPL user flags (X <= 7)
-	// TODO: Fx85 - LD Vx, R		- Read V0..VX from RPL user flags (X <= 7)
-
 	const std::vector<SInstruction> SInstruction::InstructionSet =
 	{
 		{ "CLS",	Handler_CLS,			0x00E0,	0xF0FF,	ToString_NAME									},
@@ -393,6 +445,17 @@ namespace c8
 		{ "LD",		Handler_LD_B_Vx,		0xF033,	0xF0FF,	std::bind(ToString_NAME_dst_Vx, _1, _2, "B")	},
 		{ "LD",		Handler_LD_derefI_Vx,	0xF055,	0xF0FF,	std::bind(ToString_NAME_dst_Vx, _1, _2, "[I]")	},
 		{ "LD",		Handler_LD_Vx_derefI,	0xF065,	0xF0FF,	std::bind(ToString_NAME_Vx_src, _1, _2, "[I]")	},
+
+		// SuperChip
+		{ "SCD",	Handler_SCD_n,			0x00C0,	0xFFF0,	ToString_NAME_n									},
+		{ "SCR",	Handler_SCR,			0x00FB,	0xFFFF,	ToString_NAME									},
+		{ "SCL",	Handler_SCL,			0x00FC,	0xFFFF,	ToString_NAME									},
+		{ "EXIT",	Handler_EXIT,			0x00FD,	0xFFFF,	ToString_NAME									},
+		{ "LOW",	Handler_LOW,			0x00FE,	0xFFFF,	ToString_NAME									},
+		{ "HIGH",	Handler_HIGH,			0x00FF,	0xFFFF,	ToString_NAME									},
+		{ "LD",		Handler_LD_HF_Vx,		0xF030,	0xF0FF,	std::bind(ToString_NAME_dst_Vx, _1, _2, "HF")	},
+		{ "LD",		Handler_LD_R_Vx,		0xF075,	0xF0FF,	std::bind(ToString_NAME_dst_Vx, _1, _2, "R")	},
+		{ "LD",		Handler_LD_Vx_R,		0xF085,	0xF0FF,	std::bind(ToString_NAME_Vx_src, _1, _2, "R")	},
 	};
 }
 
