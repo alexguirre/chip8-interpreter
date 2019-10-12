@@ -316,7 +316,7 @@ static void Handler_LD_F_Vx(SContext& c)
 
 	Expects(digit >= 0 && digit < FontsetCharCount);
 
-	c.I = FontsetCharByteSize * digit;
+	c.I = FontsetAddress + FontsetCharByteSize * digit;
 }
 
 static void Handler_LD_B_Vx(SContext& c)
@@ -393,10 +393,13 @@ static void Handler_HIGH(SContext& c)
 	}
 }
 
-static void Handler_LD_HF_Vx(SContext&)
+static void Handler_LD_HF_Vx(SContext& c)
 {
-	// TODO: Fx30 - LD HF, Vx		- Point I to 10-byte font sprite for digit VX (0..9)
-	throw std::runtime_error("Function not yet implemented");
+	const std::uint8_t digit = c.V[c.X()];
+
+	Expects(digit >= 0 && digit < schip::FontsetCharCount);
+
+	c.I = schip::FontsetAddress + schip::FontsetCharByteSize * digit;
 }
 
 static void Handler_LD_R_Vx(SContext&)
@@ -1320,7 +1323,7 @@ TEST_CASE("Instruction: LD F, Vx")
 			Handler_LD_F_Vx(c);
 
 			CHECK_EQ(c.V[1], digit);
-			CHECK_EQ(c.I, digit * FontsetCharByteSize);
+			CHECK_EQ(c.I, FontsetAddress + digit * FontsetCharByteSize);
 		}
 	}
 
@@ -1588,6 +1591,41 @@ TEST_CASE("Instruction: HIGH")
 
 		CHECK_EQ(c.Display.ExtendedMode, true);
 		CHECK_EQ(c.DisplayChanged, false);
+	}
+}
+
+TEST_CASE("Instruction: LD HF, Vx")
+{
+	SContext c{};
+
+	SUBCASE("Valid font chars")
+	{
+		for (std::size_t digit = 0; digit < schip::FontsetCharCount; digit++)
+		{
+			c.V[1] = gsl::narrow<std::uint8_t>(digit);
+			c.I = 0;
+			c.IR = 0x0100;
+
+			Handler_LD_HF_Vx(c);
+
+			CHECK_EQ(c.V[1], digit);
+			CHECK_EQ(c.I, schip::FontsetAddress + digit * schip::FontsetCharByteSize);
+		}
+	}
+
+	SUBCASE("Invalid font chars")
+	{
+		c.V[1] = schip::FontsetCharCount;
+		c.I = 0;
+		c.IR = 0x0100;
+
+		CHECK_THROWS(Handler_LD_HF_Vx(c));
+
+		c.V[1] = schip::FontsetCharCount + 10;
+		c.I = 0;
+		c.IR = 0x0100;
+
+		CHECK_THROWS(Handler_LD_HF_Vx(c));
 	}
 }
 

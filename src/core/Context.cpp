@@ -2,6 +2,8 @@
 
 namespace c8
 {
+	using namespace constants;
+
 	SDisplay::SDisplay()
 	{
 		Reset();
@@ -33,6 +35,7 @@ namespace c8
 		DisplayChanged = true;
 		std::fill(Keyboard.begin(), Keyboard.end(), false);
 
-		std::copy(constants::Fontset.begin(), constants::Fontset.end(), Memory.begin());
+		std::copy(Fontset.begin(), Fontset.end(), Memory.begin() + FontsetAddress);
+		std::copy(schip::Fontset.begin(), schip::Fontset.end(), Memory.begin() + schip::FontsetAddress);
 	}
 }

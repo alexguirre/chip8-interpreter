@@ -13,6 +13,7 @@ namespace c8::constants
 	constexpr std::uint16_t ProgramStartAddress{ 0x200 };
 	constexpr std::size_t InstructionByteSize{ 2 };	// Size of an instruction in bytes
 
+	constexpr std::uint16_t FontsetAddress{ 0x0 };
 	constexpr std::size_t FontsetCharByteSize{ 5 };
 	constexpr std::size_t FontsetCharCount{ 16 };
 	constexpr std::size_t FontsetTotalByteSize{ FontsetCharCount * FontsetCharByteSize };
@@ -52,6 +53,7 @@ namespace c8::constants
 	/// SuperChip constants
 	namespace schip
 	{
+		constexpr std::uint16_t FontsetAddress{ constants::FontsetAddress + constants::FontsetTotalByteSize };
 		constexpr std::size_t FontsetCharByteSize{ 10 };
 		constexpr std::size_t FontsetCharCount{ 16 };
 		constexpr std::size_t FontsetTotalByteSize{ FontsetCharCount * FontsetCharByteSize };
