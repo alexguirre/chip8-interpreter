@@ -357,16 +357,42 @@ static void Handler_SCD_n(SContext&)
 	throw std::runtime_error("Function not yet implemented");
 }
 
-static void Handler_SCR(SContext&)
+static void Handler_SCR(SContext& c)
 {
-	// TODO: 00FB - SCR				- Scroll display 4 pixels right
-	throw std::runtime_error("Function not yet implemented");
+	constexpr std::size_t PixelsToScroll{ 4 };
+
+	const std::size_t displayWidth = c.Display.Width();
+	const std::size_t displayHeight = c.Display.Height();
+	for (std::size_t x = 0; x < displayWidth; x++)
+	{
+		for (std::size_t y = 0; y < displayHeight; y++)
+		{
+			const std::size_t srcX = x + PixelsToScroll;
+			const std::size_t srcY = y;
+			c.Display.PixelBuffer[x + y * displayWidth] = srcX >= displayWidth ? 0 : c.Display.PixelBuffer[srcX + srcY * displayWidth];
+		}
+	}
+
+	c.DisplayChanged = true;
 }
 
-static void Handler_SCL(SContext&)
+static void Handler_SCL(SContext& c)
 {
-	// TODO: 00FC - SCL				- Scroll display 4 pixels left
-	throw std::runtime_error("Function not yet implemented");
+	constexpr std::size_t PixelsToScroll{ 4 };
+
+	const std::size_t displayWidth = c.Display.Width();
+	const std::size_t displayHeight = c.Display.Height();
+	for (std::size_t x = displayWidth - 1; x != static_cast<std::size_t>(-1); x--)
+	{
+		for (std::size_t y = 0; y < displayHeight; y++)
+		{
+			const std::size_t srcX = x - PixelsToScroll;
+			const std::size_t srcY = y;
+			c.Display.PixelBuffer[x + y * displayWidth] = x < PixelsToScroll ? 0 : c.Display.PixelBuffer[srcX + srcY * displayWidth];
+		}
+	}
+
+	c.DisplayChanged = true;
 }
 
 static void Handler_EXIT(SContext&)
@@ -1539,6 +1565,314 @@ TEST_CASE("Instruction: LD Vx, [I]")
 			0x90, 0xA0, 0xB0, 0xC0, 0xD0, 0xE0, 0xF0, 0xFF,
 		};
 		CHECK(std::equal(ExpectedValues.begin(), ExpectedValues.end(), c.V.begin()));
+	}
+}
+
+TEST_CASE("Instruction: SCR")
+{
+	constexpr std::size_t SpriteX{ 8 };
+	constexpr std::size_t SpriteY{ 8 };
+	constexpr std::size_t SpriteW{ 5 };
+	constexpr std::size_t SpriteH{ 4 };
+	constexpr std::size_t SpriteNumBytes{ 4 };
+
+	SContext c{};
+	c.Display.ExtendedMode = true;
+	
+	// setup display pixel buffer by drawing a sprite
+	{
+		c.V[1] = SpriteX;
+		c.V[2] = SpriteY;
+		c.IR = 0x0120 | SpriteNumBytes;
+		c.I = 0x400;
+
+		constexpr std::array<std::uint8_t, SpriteNumBytes> InputSprite
+		{
+			0b01110000,
+			0b10011000,
+			0b11001000,
+			0b01110000,
+		};
+		std::copy(InputSprite.begin(), InputSprite.end(), c.Memory.begin() + c.I);
+		Handler_DRW_Vx_Vy_n(c);
+	} 
+
+	c.V[1] = 0;
+	c.V[2] = 0;
+	c.IR = 0;
+	c.DisplayChanged = false;
+	c.V[0xF] = 0;
+
+	static constexpr std::size_t Padding{ 5 };
+	static constexpr std::size_t ExpectedW{ SpriteW + Padding * 2 };
+	static constexpr std::size_t ExpectedH{ SpriteH + Padding * 2 };
+	static constexpr std::size_t ExpectedX{ SpriteX - Padding };
+	static constexpr std::size_t ExpectedY{ SpriteY - Padding };
+	using ExpectedArray = std::array<std::uint8_t, ExpectedW * ExpectedH>;
+
+	const auto checkDisplayPixelBuffer = [&c](const ExpectedArray& expectedValues)
+	{
+		for (std::size_t y = 0; y < ExpectedH; y++)
+		{
+			CHECK(std::equal(
+				expectedValues.begin() + ExpectedW * y, expectedValues.begin() + ExpectedW * (y + 1),
+				c.Display.PixelBuffer.begin() + (ExpectedX + (ExpectedY + y) * c.Display.Width())
+			));
+		}
+	};
+
+	SUBCASE("Verify setup is correct")
+	{
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+			0,0,0,0,0,1,0,0,1,1,0,0,0,0,0,
+			0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,
+			0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+	}
+
+	SUBCASE("Single scroll")
+	{
+		Handler_SCR(c);
+
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,
+			0,1,0,0,1,1,0,0,0,0,0,0,0,0,0,
+			0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,
+			0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+		CHECK(c.DisplayChanged);
+	}
+
+	SUBCASE("Two scrolls")
+	{
+		Handler_SCR(c);
+		Handler_SCR(c);
+
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+		CHECK(c.DisplayChanged);
+	}
+
+	SUBCASE("Three scrolls")
+	{
+		Handler_SCR(c);
+		Handler_SCR(c);
+		Handler_SCR(c);
+
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+		CHECK(c.DisplayChanged);
+	}
+}
+
+TEST_CASE("Instruction: SCL")
+{
+	constexpr std::size_t SpriteX{ 8 };
+	constexpr std::size_t SpriteY{ 8 };
+	constexpr std::size_t SpriteW{ 5 };
+	constexpr std::size_t SpriteH{ 4 };
+	constexpr std::size_t SpriteNumBytes{ 4 };
+
+	SContext c{};
+	c.Display.ExtendedMode = true;
+
+	// setup display pixel buffer by drawing a sprite
+	{
+		c.V[1] = SpriteX;
+		c.V[2] = SpriteY;
+		c.IR = 0x0120 | SpriteNumBytes;
+		c.I = 0x400;
+
+		constexpr std::array<std::uint8_t, SpriteNumBytes> InputSprite
+		{
+			0b01110000,
+			0b10011000,
+			0b11001000,
+			0b01110000,
+		};
+		std::copy(InputSprite.begin(), InputSprite.end(), c.Memory.begin() + c.I);
+		Handler_DRW_Vx_Vy_n(c);
+	}
+
+	c.V[1] = 0;
+	c.V[2] = 0;
+	c.IR = 0;
+	c.DisplayChanged = false;
+	c.V[0xF] = 0;
+
+	static constexpr std::size_t Padding{ 5 };
+	static constexpr std::size_t ExpectedW{ SpriteW + Padding * 2 };
+	static constexpr std::size_t ExpectedH{ SpriteH + Padding * 2 };
+	static constexpr std::size_t ExpectedX{ SpriteX - Padding };
+	static constexpr std::size_t ExpectedY{ SpriteY - Padding };
+	using ExpectedArray = std::array<std::uint8_t, ExpectedW * ExpectedH>;
+
+	const auto checkDisplayPixelBuffer = [&c](const ExpectedArray& expectedValues)
+	{
+		for (std::size_t y = 0; y < ExpectedH; y++)
+		{
+			CHECK(std::equal(
+				expectedValues.begin() + ExpectedW * y, expectedValues.begin() + ExpectedW * (y + 1),
+				c.Display.PixelBuffer.begin() + (ExpectedX + (ExpectedY + y) * c.Display.Width())
+			));
+		}
+	};
+
+	SUBCASE("Verify setup is correct")
+	{
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+			0,0,0,0,0,1,0,0,1,1,0,0,0,0,0,
+			0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,
+			0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+	}
+
+	SUBCASE("Single scroll")
+	{
+		Handler_SCL(c);
+
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,
+			0,0,0,0,0,0,0,0,0,1,0,0,1,1,0,
+			0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,
+			0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+		CHECK(c.DisplayChanged);
+	}
+
+	SUBCASE("Two scrolls")
+	{
+		Handler_SCL(c);
+		Handler_SCL(c);
+
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+		CHECK(c.DisplayChanged);
+	}
+
+	SUBCASE("Three scrolls")
+	{
+		Handler_SCL(c);
+		Handler_SCL(c);
+		Handler_SCL(c);
+
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+		CHECK(c.DisplayChanged);
 	}
 }
 
