@@ -351,10 +351,37 @@ static void Handler_LD_Vx_derefI(SContext& c)
 
 /*** SuperChip Instructions ***/
 
-static void Handler_SCD_n(SContext&)
+static void Handler_SCD_n(SContext& c)
 {
-	// TODO: 00Cn - SCD nibble		- Scroll display N lines down
-	throw std::runtime_error("Function not yet implemented");
+	const std::uint8_t n = c.N();
+	const std::size_t displayWidth = c.Display.Width();
+	const std::size_t displayHeight = c.Display.Height();
+
+	for (std::size_t y = 0; y < displayHeight; y++)
+	{
+		const std::size_t srcY = y + n;
+
+		if (srcY < displayHeight)
+		{
+			// copy the src row to the dst row
+			std::copy(
+				c.Display.PixelBuffer.begin() + (srcY * displayWidth),       // src begin
+				c.Display.PixelBuffer.begin() + ((srcY + 1) * displayWidth), // src end
+				c.Display.PixelBuffer.begin() + (y * displayWidth)           // dst begin
+			);
+		}
+		else
+		{
+			// the src row out of bounds, so just fill the dst row with 0s
+			std::fill_n(
+				c.Display.PixelBuffer.begin() + (y * displayWidth),
+				displayWidth,
+				std::uint8_t(0)
+			);
+		}
+	}
+
+	c.DisplayChanged = true;
 }
 
 static void Handler_SCR(SContext& c)
@@ -1565,6 +1592,213 @@ TEST_CASE("Instruction: LD Vx, [I]")
 			0x90, 0xA0, 0xB0, 0xC0, 0xD0, 0xE0, 0xF0, 0xFF,
 		};
 		CHECK(std::equal(ExpectedValues.begin(), ExpectedValues.end(), c.V.begin()));
+	}
+}
+
+TEST_CASE("Instruction: SCD n")
+{
+	constexpr std::size_t SpriteX{ 8 };
+	constexpr std::size_t SpriteY{ 8 };
+	constexpr std::size_t SpriteW{ 5 };
+	constexpr std::size_t SpriteH{ 4 };
+	constexpr std::size_t SpriteNumBytes{ 4 };
+
+	SContext c{};
+	c.Display.ExtendedMode = true;
+
+	// setup display pixel buffer by drawing a sprite
+	{
+		c.V[1] = SpriteX;
+		c.V[2] = SpriteY;
+		c.IR = 0x0120 | SpriteNumBytes;
+		c.I = 0x400;
+
+		constexpr std::array<std::uint8_t, SpriteNumBytes> InputSprite
+		{
+			0b01110000,
+			0b10011000,
+			0b11001000,
+			0b01110000,
+		};
+		std::copy(InputSprite.begin(), InputSprite.end(), c.Memory.begin() + c.I);
+		Handler_DRW_Vx_Vy_n(c);
+	}
+
+	c.V[1] = 0;
+	c.V[2] = 0;
+	c.IR = 0;
+	c.DisplayChanged = false;
+	c.V[0xF] = 0;
+
+	static constexpr std::size_t Padding{ 5 };
+	static constexpr std::size_t ExpectedW{ SpriteW + Padding * 2 };
+	static constexpr std::size_t ExpectedH{ SpriteH + Padding * 2 };
+	static constexpr std::size_t ExpectedX{ SpriteX - Padding };
+	static constexpr std::size_t ExpectedY{ SpriteY - Padding };
+	using ExpectedArray = std::array<std::uint8_t, ExpectedW * ExpectedH>;
+
+	const auto checkDisplayPixelBuffer = [&c](const ExpectedArray& expectedValues)
+	{
+		for (std::size_t y = 0; y < ExpectedH; y++)
+		{
+			CHECK(std::equal(
+				expectedValues.begin() + ExpectedW * y, expectedValues.begin() + ExpectedW * (y + 1),
+				c.Display.PixelBuffer.begin() + (ExpectedX + (ExpectedY + y) * c.Display.Width())
+			));
+		}
+	};
+
+	SUBCASE("Verify setup is correct")
+	{
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+			0,0,0,0,0,1,0,0,1,1,0,0,0,0,0,
+			0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,
+			0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+	}
+
+	SUBCASE("Scroll n=0")
+	{
+		c.IR = 0x0000;
+		Handler_SCD_n(c);
+
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+			0,0,0,0,0,1,0,0,1,1,0,0,0,0,0,
+			0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,
+			0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+		CHECK(c.DisplayChanged);
+	}
+
+	SUBCASE("Scroll n=4")
+	{
+		c.IR = 0x0004;
+		Handler_SCD_n(c);
+
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+			0,0,0,0,0,1,0,0,1,1,0,0,0,0,0,
+			0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,
+			0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+		CHECK(c.DisplayChanged);
+	}
+
+	SUBCASE("Scroll n=8")
+	{
+		c.IR = 0x0008;
+		Handler_SCD_n(c);
+
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+		CHECK(c.DisplayChanged);
+	}
+
+	SUBCASE("Scroll n=4 twice")
+	{
+		c.IR = 0x0004;
+		Handler_SCD_n(c);
+		Handler_SCD_n(c);
+
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+		CHECK(c.DisplayChanged);
+	}
+
+	SUBCASE("Scroll n=15")
+	{
+		c.IR = 0x000F;
+		Handler_SCD_n(c);
+
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+		CHECK(c.DisplayChanged);
 	}
 }
 
