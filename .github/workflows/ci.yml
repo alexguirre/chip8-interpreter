@@ -52,8 +52,6 @@ jobs:
           git clone https://github.com/microsoft/vcpkg.git
           cd vcpkg
           ./bootstrap-vcpkg.sh
-      - name: Install OpenGL
-        run: sudo apt-get install libglu1-mesa-dev
       - name: Install GCC 9
         run: | # based on: https://github.com/ArkEcosystem/cpp-crypto/blob/b05116d6ab4ffe50cad53a49ca33e95ec505064f/.github/workflows/test.yml#L46
           sudo apt-add-repository -y ppa:ubuntu-toolchain-r/test
@@ -61,6 +59,8 @@ jobs:
           sudo apt-get -y install g++-9 gcc-9
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-9
           sudo update-alternatives --config gcc
+      - name: Install OpenGL
+        run: sudo apt-get install libglu1-mesa-dev
       - name: Install dependencies
         run: |
           cd vcpkg
