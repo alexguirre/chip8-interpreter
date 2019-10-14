@@ -35,6 +35,7 @@ namespace c8
 		SDisplay Display;
 		bool DisplayChanged;
 		SKeyboardState Keyboard;
+		bool Exited;
 
 		SContext();
 

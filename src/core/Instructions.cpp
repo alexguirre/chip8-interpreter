@@ -422,10 +422,9 @@ static void Handler_SCL(SContext& c)
 	c.DisplayChanged = true;
 }
 
-static void Handler_EXIT(SContext&)
+static void Handler_EXIT(SContext& c)
 {
-	// TODO: 00FD - EXIT			- Exit CHIP interpreter
-	throw std::runtime_error("Function not yet implemented");
+	c.Exited = true;
 }
 
 static void Handler_LOW(SContext& c)
@@ -2108,6 +2107,16 @@ TEST_CASE("Instruction: SCL")
 		checkDisplayPixelBuffer(ExpectedValues);
 		CHECK(c.DisplayChanged);
 	}
+}
+
+TEST_CASE("Instruction: EXIT")
+{
+	SContext c{};
+	c.Exited = false;
+
+	Handler_EXIT(c);
+
+	CHECK(c.Exited);
 }
 
 TEST_CASE("Instruction: LOW")

@@ -34,6 +34,7 @@ namespace c8
 		Display.Reset();
 		DisplayChanged = true;
 		std::fill(Keyboard.begin(), Keyboard.end(), false);
+		Exited = false;
 
 		std::copy(Fontset.begin(), Fontset.end(), Memory.begin() + FontsetAddress);
 		std::copy(schip::Fontset.begin(), schip::Fontset.end(), Memory.begin() + schip::FontsetAddress);

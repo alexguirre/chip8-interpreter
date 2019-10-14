@@ -32,6 +32,11 @@ namespace c8
 
 	void CInterpreter::Step()
 	{
+		if (mContext.Exited)
+		{
+			return;
+		}
+
 		mPlatform->GetKeyboardState(mContext.Keyboard);
 
 		const auto now = Clock::now();
@@ -52,6 +57,11 @@ namespace c8
 	void CInterpreter::DoCycle()
 	{
 		SContext& c = mContext;
+
+		if (c.Exited)
+		{
+			return;
+		}
 
 		// fetch
 		const std::uint16_t opcode = c.Memory[c.PC] << 8 | c.Memory[c.PC + std::size_t{ 1 }];
@@ -74,6 +84,11 @@ namespace c8
 
 	void CInterpreter::DoTimerTick()
 	{
+		if (mContext.Exited)
+		{
+			return;
+		}
+
 		if (mContext.DT > 0)
 		{
 			mContext.DT--;
@@ -135,6 +150,7 @@ namespace c8
 		file.read(c.Memory.data(), c.Memory.size() * sizeof(std::uint8_t));
 		file.read(reinterpret_cast<std::uint8_t*>(&c.Display.ExtendedMode), sizeof(c.Display.ExtendedMode));
 		file.read(c.Display.PixelBuffer.data(), c.Display.PixelBuffer.size() * sizeof(std::uint8_t));
+		file.read(reinterpret_cast<std::uint8_t*>(&c.Exited), sizeof(c.Exited));
 
 		c.DisplayChanged = true;
 	}
@@ -165,6 +181,7 @@ namespace c8
 		file.write(c.Memory.data(), c.Memory.size() * sizeof(std::uint8_t));
 		file.write(reinterpret_cast<const std::uint8_t*>(&c.Display.ExtendedMode), sizeof(c.Display.ExtendedMode));
 		file.write(c.Display.PixelBuffer.data(), c.Display.PixelBuffer.size() * sizeof(std::uint8_t));
+		file.write(reinterpret_cast<const std::uint8_t*>(&c.Exited), sizeof(c.Exited));
 	}
 
 	const SInstruction& CInterpreter::FindInstruction(std::uint16_t opcode) const
