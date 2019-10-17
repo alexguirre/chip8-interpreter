@@ -148,6 +148,7 @@ namespace c8
 		file.read(&c.ST, sizeof(c.ST));
 		file.read(reinterpret_cast<std::uint8_t*>(c.Stack.data()), c.Stack.size() * sizeof(std::uint16_t));
 		file.read(c.Memory.data(), c.Memory.size() * sizeof(std::uint8_t));
+		file.read(c.RPL.data(), c.RPL.size() * sizeof(std::uint8_t));
 		file.read(reinterpret_cast<std::uint8_t*>(&c.Display.ExtendedMode), sizeof(c.Display.ExtendedMode));
 		file.read(c.Display.PixelBuffer.data(), c.Display.PixelBuffer.size() * sizeof(std::uint8_t));
 		file.read(reinterpret_cast<std::uint8_t*>(&c.Exited), sizeof(c.Exited));
@@ -179,6 +180,7 @@ namespace c8
 		file.write(&c.ST, sizeof(c.ST));
 		file.write(reinterpret_cast<const std::uint8_t*>(c.Stack.data()), c.Stack.size() * sizeof(std::uint16_t));
 		file.write(c.Memory.data(), c.Memory.size() * sizeof(std::uint8_t));
+		file.write(c.RPL.data(), c.RPL.size() * sizeof(std::uint8_t));
 		file.write(reinterpret_cast<const std::uint8_t*>(&c.Display.ExtendedMode), sizeof(c.Display.ExtendedMode));
 		file.write(c.Display.PixelBuffer.data(), c.Display.PixelBuffer.size() * sizeof(std::uint8_t));
 		file.write(reinterpret_cast<const std::uint8_t*>(&c.Exited), sizeof(c.Exited));

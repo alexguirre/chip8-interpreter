@@ -454,16 +454,28 @@ static void Handler_LD_HF_Vx(SContext& c)
 	c.I = schip::FontsetAddress + schip::FontsetCharByteSize * digit;
 }
 
-static void Handler_LD_R_Vx(SContext&)
+static void Handler_LD_R_Vx(SContext& c)
 {
-	// TODO: Fx75 - LD R, Vx		- Store V0..VX in RPL user flags (X <= 7)
-	throw std::runtime_error("Function not yet implemented");
+	const std::size_t x = c.X();
+	Expects(x < schip::NumberOfRPLFlags);
+
+	std::copy(
+		c.V.begin(),
+		std::next(c.V.begin(), x + 1),
+		c.RPL.begin()
+	);
 }
 
-static void Handler_LD_Vx_R(SContext&)
+static void Handler_LD_Vx_R(SContext& c)
 {
-	// TODO: Fx85 - LD Vx, R		- Read V0..VX from RPL user flags (X <= 7)
-	throw std::runtime_error("Function not yet implemented");
+	const std::size_t x = c.X();
+	Expects(x < schip::NumberOfRPLFlags);
+
+	std::copy(
+		c.RPL.begin(),
+		std::next(c.RPL.begin(), x + 1),
+		c.V.begin()
+	);
 }
 
 using namespace std::placeholders;
@@ -2203,6 +2215,174 @@ TEST_CASE("Instruction: LD HF, Vx")
 		c.IR = 0x0100;
 
 		CHECK_THROWS(Handler_LD_HF_Vx(c));
+	}
+}
+
+TEST_CASE("Instruction: LD R, Vx")
+{
+	SContext c{};
+	std::fill(c.V.begin(), c.V.end(), std::uint8_t(0));
+	std::fill(c.RPL.begin(), c.RPL.end(), std::uint8_t(0));
+
+	SUBCASE("Single flag")
+	{
+		c.IR = 0x0000;
+		c.V[0] = 0x12;
+
+		Handler_LD_R_Vx(c);
+
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedV
+		{
+			0x12, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		};
+		constexpr std::array<std::uint8_t, schip::NumberOfRPLFlags> ExpectedRPL
+		{
+			0x12, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		};
+		CHECK(std::equal(c.V.begin(), c.V.end(), ExpectedV.begin()));
+		CHECK(std::equal(c.RPL.begin(), c.RPL.end(), ExpectedRPL.begin()));
+	}
+
+	SUBCASE("Half of the flags")
+	{
+		c.IR = 0x0300;
+		c.V[0] = 0x12;
+		c.V[1] = 0x23;
+		c.V[2] = 0x34;
+		c.V[3] = 0x45;
+
+		Handler_LD_R_Vx(c);
+
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedV
+		{
+			0x12, 0x23, 0x34, 0x45, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		};
+		constexpr std::array<std::uint8_t, schip::NumberOfRPLFlags> ExpectedRPL
+		{
+			0x12, 0x23, 0x34, 0x45, 0x00, 0x00, 0x00, 0x00,
+		};
+		CHECK(std::equal(c.V.begin(), c.V.end(), ExpectedV.begin()));
+		CHECK(std::equal(c.RPL.begin(), c.RPL.end(), ExpectedRPL.begin()));
+	}
+
+	SUBCASE("All the flags")
+	{
+		c.IR = 0x0700;
+		c.V[0] = 0x12;
+		c.V[1] = 0x23;
+		c.V[2] = 0x34;
+		c.V[3] = 0x45;
+		c.V[4] = 0x56;
+		c.V[5] = 0x67;
+		c.V[6] = 0x78;
+		c.V[7] = 0x89;
+
+		Handler_LD_R_Vx(c);
+
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedV
+		{
+			0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		};
+		constexpr std::array<std::uint8_t, schip::NumberOfRPLFlags> ExpectedRPL
+		{
+			0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89,
+		};
+		CHECK(std::equal(c.V.begin(), c.V.end(), ExpectedV.begin()));
+		CHECK(std::equal(c.RPL.begin(), c.RPL.end(), ExpectedRPL.begin()));
+	}
+
+	SUBCASE("Out of bounds")
+	{
+		c.IR = 0x0A00;
+
+		CHECK_THROWS(Handler_LD_R_Vx(c));
+	}
+}
+
+TEST_CASE("Instruction: LD Vx, R")
+{
+	SContext c{};
+	std::fill(c.V.begin(), c.V.end(), std::uint8_t(0));
+	std::fill(c.RPL.begin(), c.RPL.end(), std::uint8_t(0));
+
+	SUBCASE("Single flag")
+	{
+		c.IR = 0x0000;
+		c.RPL[0] = 0x12;
+
+		Handler_LD_Vx_R(c);
+
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedV
+		{
+			0x12, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		};
+		constexpr std::array<std::uint8_t, schip::NumberOfRPLFlags> ExpectedRPL
+		{
+			0x12, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		};
+		CHECK(std::equal(c.V.begin(), c.V.end(), ExpectedV.begin()));
+		CHECK(std::equal(c.RPL.begin(), c.RPL.end(), ExpectedRPL.begin()));
+	}
+
+	SUBCASE("Half of the flags")
+	{
+		c.IR = 0x0300;
+		c.RPL[0] = 0x12;
+		c.RPL[1] = 0x23;
+		c.RPL[2] = 0x34;
+		c.RPL[3] = 0x45;
+
+		Handler_LD_Vx_R(c);
+
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedV
+		{
+			0x12, 0x23, 0x34, 0x45, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		};
+		constexpr std::array<std::uint8_t, schip::NumberOfRPLFlags> ExpectedRPL
+		{
+			0x12, 0x23, 0x34, 0x45, 0x00, 0x00, 0x00, 0x00,
+		};
+		CHECK(std::equal(c.V.begin(), c.V.end(), ExpectedV.begin()));
+		CHECK(std::equal(c.RPL.begin(), c.RPL.end(), ExpectedRPL.begin()));
+	}
+
+	SUBCASE("All the flags")
+	{
+		c.IR = 0x0700;
+		c.RPL[0] = 0x12;
+		c.RPL[1] = 0x23;
+		c.RPL[2] = 0x34;
+		c.RPL[3] = 0x45;
+		c.RPL[4] = 0x56;
+		c.RPL[5] = 0x67;
+		c.RPL[6] = 0x78;
+		c.RPL[7] = 0x89;
+
+		Handler_LD_Vx_R(c);
+
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedV
+		{
+			0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		};
+		constexpr std::array<std::uint8_t, schip::NumberOfRPLFlags> ExpectedRPL
+		{
+			0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89,
+		};
+		CHECK(std::equal(c.V.begin(), c.V.end(), ExpectedV.begin()));
+		CHECK(std::equal(c.RPL.begin(), c.RPL.end(), ExpectedRPL.begin()));
+	}
+
+	SUBCASE("Out of bounds")
+	{
+		c.IR = 0x0A00;
+
+		CHECK_THROWS(Handler_LD_Vx_R(c));
 	}
 }
 

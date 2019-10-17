@@ -53,6 +53,8 @@ namespace c8::constants
 	/// SuperChip constants
 	namespace schip
 	{
+		constexpr std::size_t NumberOfRPLFlags{ 8 };
+
 		constexpr std::uint16_t FontsetAddress{ constants::FontsetAddress + constants::FontsetTotalByteSize };
 		constexpr std::size_t FontsetCharByteSize{ 10 };
 		constexpr std::size_t FontsetCharCount{ 16 };

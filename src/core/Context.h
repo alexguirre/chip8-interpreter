@@ -32,6 +32,7 @@ namespace c8
 		std::uint16_t IR;	// The current instruction opcode
 		std::array<std::uint16_t, constants::StackSize> Stack;
 		std::array<std::uint8_t, constants::MemorySize> Memory;
+		std::array<std::uint8_t, constants::schip::NumberOfRPLFlags> RPL; // RPL user flags
 		SDisplay Display;
 		bool DisplayChanged;
 		SKeyboardState Keyboard;
