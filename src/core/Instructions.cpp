@@ -462,7 +462,7 @@ static void Handler_LD_R_Vx(SContext& c)
 	std::copy(
 		c.V.begin(),
 		std::next(c.V.begin(), x + 1),
-		c.RPL.begin()
+		c.R.begin()
 	);
 }
 
@@ -472,8 +472,8 @@ static void Handler_LD_Vx_R(SContext& c)
 	Expects(x < schip::NumberOfRPLFlags);
 
 	std::copy(
-		c.RPL.begin(),
-		std::next(c.RPL.begin(), x + 1),
+		c.R.begin(),
+		std::next(c.R.begin(), x + 1),
 		c.V.begin()
 	);
 }
@@ -2222,7 +2222,7 @@ TEST_CASE("Instruction: LD R, Vx")
 {
 	SContext c{};
 	std::fill(c.V.begin(), c.V.end(), std::uint8_t(0));
-	std::fill(c.RPL.begin(), c.RPL.end(), std::uint8_t(0));
+	std::fill(c.R.begin(), c.R.end(), std::uint8_t(0));
 
 	SUBCASE("Single flag")
 	{
@@ -2241,7 +2241,7 @@ TEST_CASE("Instruction: LD R, Vx")
 			0x12, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		};
 		CHECK(std::equal(c.V.begin(), c.V.end(), ExpectedV.begin()));
-		CHECK(std::equal(c.RPL.begin(), c.RPL.end(), ExpectedRPL.begin()));
+		CHECK(std::equal(c.R.begin(), c.R.end(), ExpectedRPL.begin()));
 	}
 
 	SUBCASE("Half of the flags")
@@ -2264,7 +2264,7 @@ TEST_CASE("Instruction: LD R, Vx")
 			0x12, 0x23, 0x34, 0x45, 0x00, 0x00, 0x00, 0x00,
 		};
 		CHECK(std::equal(c.V.begin(), c.V.end(), ExpectedV.begin()));
-		CHECK(std::equal(c.RPL.begin(), c.RPL.end(), ExpectedRPL.begin()));
+		CHECK(std::equal(c.R.begin(), c.R.end(), ExpectedRPL.begin()));
 	}
 
 	SUBCASE("All the flags")
@@ -2291,7 +2291,7 @@ TEST_CASE("Instruction: LD R, Vx")
 			0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89,
 		};
 		CHECK(std::equal(c.V.begin(), c.V.end(), ExpectedV.begin()));
-		CHECK(std::equal(c.RPL.begin(), c.RPL.end(), ExpectedRPL.begin()));
+		CHECK(std::equal(c.R.begin(), c.R.end(), ExpectedRPL.begin()));
 	}
 
 	SUBCASE("Out of bounds")
@@ -2306,12 +2306,12 @@ TEST_CASE("Instruction: LD Vx, R")
 {
 	SContext c{};
 	std::fill(c.V.begin(), c.V.end(), std::uint8_t(0));
-	std::fill(c.RPL.begin(), c.RPL.end(), std::uint8_t(0));
+	std::fill(c.R.begin(), c.R.end(), std::uint8_t(0));
 
 	SUBCASE("Single flag")
 	{
 		c.IR = 0x0000;
-		c.RPL[0] = 0x12;
+		c.R[0] = 0x12;
 
 		Handler_LD_Vx_R(c);
 
@@ -2325,16 +2325,16 @@ TEST_CASE("Instruction: LD Vx, R")
 			0x12, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		};
 		CHECK(std::equal(c.V.begin(), c.V.end(), ExpectedV.begin()));
-		CHECK(std::equal(c.RPL.begin(), c.RPL.end(), ExpectedRPL.begin()));
+		CHECK(std::equal(c.R.begin(), c.R.end(), ExpectedRPL.begin()));
 	}
 
 	SUBCASE("Half of the flags")
 	{
 		c.IR = 0x0300;
-		c.RPL[0] = 0x12;
-		c.RPL[1] = 0x23;
-		c.RPL[2] = 0x34;
-		c.RPL[3] = 0x45;
+		c.R[0] = 0x12;
+		c.R[1] = 0x23;
+		c.R[2] = 0x34;
+		c.R[3] = 0x45;
 
 		Handler_LD_Vx_R(c);
 
@@ -2348,20 +2348,20 @@ TEST_CASE("Instruction: LD Vx, R")
 			0x12, 0x23, 0x34, 0x45, 0x00, 0x00, 0x00, 0x00,
 		};
 		CHECK(std::equal(c.V.begin(), c.V.end(), ExpectedV.begin()));
-		CHECK(std::equal(c.RPL.begin(), c.RPL.end(), ExpectedRPL.begin()));
+		CHECK(std::equal(c.R.begin(), c.R.end(), ExpectedRPL.begin()));
 	}
 
 	SUBCASE("All the flags")
 	{
 		c.IR = 0x0700;
-		c.RPL[0] = 0x12;
-		c.RPL[1] = 0x23;
-		c.RPL[2] = 0x34;
-		c.RPL[3] = 0x45;
-		c.RPL[4] = 0x56;
-		c.RPL[5] = 0x67;
-		c.RPL[6] = 0x78;
-		c.RPL[7] = 0x89;
+		c.R[0] = 0x12;
+		c.R[1] = 0x23;
+		c.R[2] = 0x34;
+		c.R[3] = 0x45;
+		c.R[4] = 0x56;
+		c.R[5] = 0x67;
+		c.R[6] = 0x78;
+		c.R[7] = 0x89;
 
 		Handler_LD_Vx_R(c);
 
@@ -2375,7 +2375,7 @@ TEST_CASE("Instruction: LD Vx, R")
 			0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89,
 		};
 		CHECK(std::equal(c.V.begin(), c.V.end(), ExpectedV.begin()));
-		CHECK(std::equal(c.RPL.begin(), c.RPL.end(), ExpectedRPL.begin()));
+		CHECK(std::equal(c.R.begin(), c.R.end(), ExpectedRPL.begin()));
 	}
 
 	SUBCASE("Out of bounds")
