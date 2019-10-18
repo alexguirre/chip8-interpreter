@@ -10,7 +10,7 @@ namespace c8
 		virtual ~IPlatform() = default;
 
 		virtual void GetKeyboardState(SKeyboardState& dest) = 0;
-		virtual void UpdateDisplay(const SDisplayPixelBuffer& pixelBuffer) = 0;
+		virtual void UpdateDisplay(const SDisplay& display) = 0;
 		virtual void Beep(double frequency, std::chrono::milliseconds duration) = 0;
 	};
 }

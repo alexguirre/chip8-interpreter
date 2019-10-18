@@ -71,10 +71,15 @@ static std::string ToString_NAME_dst_Vx(const SInstruction& i, const SContext& c
 	return ss.str();
 }
 
+static std::string ToString_NAME_n(const SInstruction&, const SContext&)
+{
+	throw std::runtime_error("Function not yet implemented");
+}
+
 static void Handler_CLS(SContext& c)
 {
-	std::fill(c.PixelBuffer.begin(), c.PixelBuffer.end(), std::uint8_t(0));
-	c.PixelBufferDirty = true;
+	std::fill(c.Display.PixelBuffer.begin(), c.Display.PixelBuffer.end(), std::uint8_t(0));
+	c.DisplayChanged = true;
 }
 
 static void Handler_RET(SContext& c)
@@ -225,27 +230,58 @@ static void Handler_DRW_Vx_Vy_n(SContext& c)
 	const std::uint8_t n = c.N();
 
 	c.V[0xF] = 0; // collision flag to 0
-	for (std::size_t byteIndex = 0; byteIndex < n; byteIndex++)
+	if (n != 0)
 	{
-		const std::uint8_t byte = c.Memory[c.I + byteIndex];
-
-		for (std::size_t bitIndex = 0; bitIndex < 8; bitIndex++)
+		for (std::size_t byteIndex = 0; byteIndex < n; byteIndex++)
 		{
-			const std::uint8_t bit = (byte >> (7 - bitIndex)) & 1;
-			const std::size_t x = (vx + bitIndex) % DisplayResolutionWidth;
-			const std::size_t y = (vy + byteIndex) % DisplayResolutionHeight;
-			std::uint8_t& pixel = c.PixelBuffer[x + y * DisplayResolutionWidth];
+			const std::uint8_t byte = c.Memory[c.I + byteIndex];
 
-			// collision
-			if (bit && pixel)
+			for (std::size_t bitIndex = 0; bitIndex < 8; bitIndex++)
 			{
-				c.V[0xF] = 1;
-			}
+				const std::uint8_t bit = (byte >> (7 - bitIndex)) & 1;
+				const std::size_t x = (vx + bitIndex) % c.Display.Width();
+				const std::size_t y = (vy + byteIndex) % c.Display.Height();
+				std::uint8_t& pixel = c.Display.PixelBuffer[x + y * c.Display.Width()];
 
-			pixel ^= bit;
+				// collision
+				if (bit && pixel)
+				{
+					c.V[0xF] = 1;
+				}
+
+				pixel ^= bit;
+			}
 		}
+		c.DisplayChanged = true;
 	}
-	c.PixelBufferDirty = true;
+	else if (c.Display.ExtendedMode)
+	{
+		// Draw a 16x16 sprite.
+		// Each row consists of two contiguous bytes in memory to get the 16 pixels width
+		for (std::size_t row = 0; row < 16; row++)
+		{
+			for (std::size_t col = 0; col < 16; col++)
+			{
+				const std::size_t byteIndex = (row * 2) + (col / 8);
+				const std::uint8_t byte = c.Memory[c.I + byteIndex];
+
+				const std::size_t bitIndex = col % 8;
+				const std::uint8_t bit = (byte >> (7 - bitIndex)) & 1;
+				const std::size_t x = (vx + col) % c.Display.Width();
+				const std::size_t y = (vy + row) % c.Display.Height();
+				std::uint8_t& pixel = c.Display.PixelBuffer[x + y * c.Display.Width()];
+
+				// collision
+				if (bit && pixel)
+				{
+					c.V[0xF] = 1;
+				}
+
+				pixel ^= bit;
+			}
+		}
+		c.DisplayChanged = true;
+	}
 }
 
 static void Handler_SKP_Vx(SContext& c)
@@ -309,7 +345,7 @@ static void Handler_LD_F_Vx(SContext& c)
 
 	Expects(digit >= 0 && digit < FontsetCharCount);
 
-	c.I = FontsetCharByteSize * digit;
+	c.I = FontsetAddress + FontsetCharByteSize * digit;
 }
 
 static void Handler_LD_B_Vx(SContext& c)
@@ -340,6 +376,135 @@ static void Handler_LD_Vx_derefI(SContext& c)
 	{
 		c.V[i] = c.Memory[c.I + i];
 	}
+}
+
+/*** SuperChip Instructions ***/
+
+static void Handler_SCD_n(SContext& c)
+{
+	const std::uint8_t n = c.N();
+	const std::size_t displayWidth = c.Display.Width();
+	const std::size_t displayHeight = c.Display.Height();
+
+	for (std::size_t y = 0; y < displayHeight; y++)
+	{
+		const std::size_t srcY = y + n;
+
+		if (srcY < displayHeight)
+		{
+			// copy the src row to the dst row
+			std::copy(
+				c.Display.PixelBuffer.begin() + (srcY * displayWidth),       // src begin
+				c.Display.PixelBuffer.begin() + ((srcY + 1) * displayWidth), // src end
+				c.Display.PixelBuffer.begin() + (y * displayWidth)           // dst begin
+			);
+		}
+		else
+		{
+			// the src row out of bounds, so just fill the dst row with 0s
+			std::fill_n(
+				c.Display.PixelBuffer.begin() + (y * displayWidth),
+				displayWidth,
+				std::uint8_t(0)
+			);
+		}
+	}
+
+	c.DisplayChanged = true;
+}
+
+static void Handler_SCR(SContext& c)
+{
+	constexpr std::size_t PixelsToScroll{ 4 };
+
+	const std::size_t displayWidth = c.Display.Width();
+	const std::size_t displayHeight = c.Display.Height();
+	for (std::size_t x = 0; x < displayWidth; x++)
+	{
+		for (std::size_t y = 0; y < displayHeight; y++)
+		{
+			const std::size_t srcX = x + PixelsToScroll;
+			const std::size_t srcY = y;
+			c.Display.PixelBuffer[x + y * displayWidth] = srcX >= displayWidth ? 0 : c.Display.PixelBuffer[srcX + srcY * displayWidth];
+		}
+	}
+
+	c.DisplayChanged = true;
+}
+
+static void Handler_SCL(SContext& c)
+{
+	constexpr std::size_t PixelsToScroll{ 4 };
+
+	const std::size_t displayWidth = c.Display.Width();
+	const std::size_t displayHeight = c.Display.Height();
+	for (std::size_t x = displayWidth - 1; x != static_cast<std::size_t>(-1); x--)
+	{
+		for (std::size_t y = 0; y < displayHeight; y++)
+		{
+			const std::size_t srcX = x - PixelsToScroll;
+			const std::size_t srcY = y;
+			c.Display.PixelBuffer[x + y * displayWidth] = x < PixelsToScroll ? 0 : c.Display.PixelBuffer[srcX + srcY * displayWidth];
+		}
+	}
+
+	c.DisplayChanged = true;
+}
+
+static void Handler_EXIT(SContext& c)
+{
+	c.Exited = true;
+}
+
+static void Handler_LOW(SContext& c)
+{
+	if (c.Display.ExtendedMode)
+	{
+		c.Display.ExtendedMode = false;
+		c.DisplayChanged = true;
+	}
+}
+
+static void Handler_HIGH(SContext& c)
+{
+	if (!c.Display.ExtendedMode)
+	{
+		c.Display.ExtendedMode = true;
+		c.DisplayChanged = true;
+	}
+}
+
+static void Handler_LD_HF_Vx(SContext& c)
+{
+	const std::uint8_t digit = c.V[c.X()];
+
+	Expects(digit >= 0 && digit < schip::FontsetCharCount);
+
+	c.I = schip::FontsetAddress + schip::FontsetCharByteSize * digit;
+}
+
+static void Handler_LD_R_Vx(SContext& c)
+{
+	const std::size_t x = c.X();
+	Expects(x < schip::NumberOfRPLFlags);
+
+	std::copy(
+		c.V.begin(),
+		std::next(c.V.begin(), x + 1),
+		c.R.begin()
+	);
+}
+
+static void Handler_LD_Vx_R(SContext& c)
+{
+	const std::size_t x = c.X();
+	Expects(x < schip::NumberOfRPLFlags);
+
+	std::copy(
+		c.R.begin(),
+		std::next(c.R.begin(), x + 1),
+		c.V.begin()
+	);
 }
 
 using namespace std::placeholders;
@@ -382,6 +547,17 @@ namespace c8
 		{ "LD",		Handler_LD_B_Vx,		0xF033,	0xF0FF,	std::bind(ToString_NAME_dst_Vx, _1, _2, "B")	},
 		{ "LD",		Handler_LD_derefI_Vx,	0xF055,	0xF0FF,	std::bind(ToString_NAME_dst_Vx, _1, _2, "[I]")	},
 		{ "LD",		Handler_LD_Vx_derefI,	0xF065,	0xF0FF,	std::bind(ToString_NAME_Vx_src, _1, _2, "[I]")	},
+
+		// SuperChip
+		{ "SCD",	Handler_SCD_n,			0x00C0,	0xFFF0,	ToString_NAME_n									},
+		{ "SCR",	Handler_SCR,			0x00FB,	0xFFFF,	ToString_NAME									},
+		{ "SCL",	Handler_SCL,			0x00FC,	0xFFFF,	ToString_NAME									},
+		{ "EXIT",	Handler_EXIT,			0x00FD,	0xFFFF,	ToString_NAME									},
+		{ "LOW",	Handler_LOW,			0x00FE,	0xFFFF,	ToString_NAME									},
+		{ "HIGH",	Handler_HIGH,			0x00FF,	0xFFFF,	ToString_NAME									},
+		{ "LD",		Handler_LD_HF_Vx,		0xF030,	0xF0FF,	std::bind(ToString_NAME_dst_Vx, _1, _2, "HF")	},
+		{ "LD",		Handler_LD_R_Vx,		0xF075,	0xF0FF,	std::bind(ToString_NAME_dst_Vx, _1, _2, "R")	},
+		{ "LD",		Handler_LD_Vx_R,		0xF085,	0xF0FF,	std::bind(ToString_NAME_Vx_src, _1, _2, "R")	},
 	};
 }
 
@@ -449,12 +625,12 @@ TEST_SUITE_BEGIN("Instruction set");
 TEST_CASE("Instruction: CLS")
 {
 	SContext c{};
-	std::fill(c.PixelBuffer.begin(), c.PixelBuffer.end(), std::uint8_t{ 1 });
+	std::fill(c.Display.PixelBuffer.begin(), c.Display.PixelBuffer.end(), std::uint8_t{ 1 });
 
 	Handler_CLS(c);
 	
-	CHECK(c.PixelBufferDirty);
-	CHECK(std::all_of(c.PixelBuffer.begin(), c.PixelBuffer.end(), [](std::uint8_t b) { return b == 0; }));
+	CHECK(c.DisplayChanged);
+	CHECK(std::all_of(c.Display.PixelBuffer.begin(), c.Display.PixelBuffer.end(), [](std::uint8_t b) { return b == 0; }));
 }
 
 TEST_CASE("Instruction: RET")
@@ -954,6 +1130,8 @@ TEST_CASE("Instruction: RND Vx, kk")
 
 TEST_CASE("Instruction: DRW Vx, Vy, n")
 {
+	// TODO: add tests for wrap around
+
 	constexpr std::size_t X{ 16 };
 	constexpr std::size_t Y{ 16 };
 	constexpr std::size_t W{ 5 };
@@ -965,7 +1143,7 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 	c.V[2] = Y;
 	c.IR = 0x0120 | N;
 	c.I = 0x400;
-	c.PixelBufferDirty = false;
+	c.DisplayChanged = false;
 	c.V[0xF] = 0xCD;
 
 	constexpr std::array<std::uint8_t, N> InputSprite
@@ -992,10 +1170,10 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 		{
 			CHECK(std::equal(
 				ExpectedValues.begin() + W * y, ExpectedValues.begin() + W * (y + 1),
-				c.PixelBuffer.begin() + (X + (Y + y) * DisplayResolutionWidth)
+				c.Display.PixelBuffer.begin() + (X + (Y + y) * c.Display.Width())
 			));
 		}
-		CHECK(c.PixelBufferDirty);
+		CHECK(c.DisplayChanged);
 		CHECK_EQ(c.V[0xF], 0);
 	}
 
@@ -1016,10 +1194,146 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 		{
 			CHECK(std::equal(
 				ExpectedValues.begin() + W * y, ExpectedValues.begin() + W * (y + 1),
-				c.PixelBuffer.begin() + (X + (Y + y) * DisplayResolutionWidth)
+				c.Display.PixelBuffer.begin() + (X + (Y + y) * c.Display.Width())
 			));
 		}
-		CHECK(c.PixelBufferDirty);
+		CHECK(c.DisplayChanged);
+		CHECK_EQ(c.V[0xF], 1);
+	}
+
+	constexpr std::size_t X2{ 70 };
+	constexpr std::size_t Y2{ 40 };
+
+	c.V[1] = X2;
+	c.V[2] = Y2;
+	c.Display.ExtendedMode = true;
+
+	SUBCASE("Single draw (extended mode)")
+	{
+		Handler_DRW_Vx_Vy_n(c);
+
+		constexpr std::array<std::uint8_t, W * H> ExpectedValues
+		{
+			0,1,1,1,0,
+			1,0,0,1,1,
+			1,1,0,0,1,
+			0,1,1,1,0,
+		};
+		for (std::size_t y = 0; y < H; y++)
+		{
+			CHECK(std::equal(
+				ExpectedValues.begin() + W * y, ExpectedValues.begin() + W * (y + 1),
+				c.Display.PixelBuffer.begin() + (X2 + (Y2 + y) * c.Display.Width())
+			));
+		}
+		CHECK(c.DisplayChanged);
+		CHECK_EQ(c.V[0xF], 0);
+	}
+
+	SUBCASE("Two draws (extended mode, collision)")
+	{
+		Handler_DRW_Vx_Vy_n(c);
+
+		Handler_DRW_Vx_Vy_n(c);
+
+		constexpr std::array<std::uint8_t, W * H> ExpectedValues
+		{
+			0,0,0,0,0,
+			0,0,0,0,0,
+			0,0,0,0,0,
+			0,0,0,0,0,
+		};
+		for (std::size_t y = 0; y < H; y++)
+		{
+			CHECK(std::equal(
+				ExpectedValues.begin() + W * y, ExpectedValues.begin() + W * (y + 1),
+				c.Display.PixelBuffer.begin() + (X2 + (Y2 + y) * c.Display.Width())
+			));
+		}
+		CHECK(c.DisplayChanged);
+		CHECK_EQ(c.V[0xF], 1);
+	}
+
+	constexpr std::size_t ExtendedW{ 16 };
+	constexpr std::size_t ExtendedH{ 16 };
+	constexpr std::array<std::uint8_t, 2 * 16> ExtendedInputSprite
+	{
+		0b01110000, 0b00001110,
+		0b10011000, 0b00010011,
+		0b11001000, 0b00011001,
+		0b01110000, 0b00001110,
+		0b01110000, 0b00001110,
+		0b10011000, 0b00010011,
+		0b11001000, 0b00011001,
+		0b01110000, 0b00001110,
+		0b01110000, 0b00001110,
+		0b10011000, 0b00010011,
+		0b11001000, 0b00011001,
+		0b01110000, 0b00001110,
+	};
+	std::copy(ExtendedInputSprite.begin(), ExtendedInputSprite.end(), c.Memory.begin() + c.I);
+	c.IR = 0x0120;
+
+	SUBCASE("Single draw (extended mode, 16x16 sprite)")
+	{
+		Handler_DRW_Vx_Vy_n(c);
+
+		constexpr std::array<std::uint8_t, ExtendedW * ExtendedH> ExpectedValues
+		{
+			0,1,1,1,0,0,0,0,0,0,0,0,1,1,1,0,
+			1,0,0,1,1,0,0,0,0,0,0,1,0,0,1,1,
+			1,1,0,0,1,0,0,0,0,0,0,1,1,0,0,1,
+			0,1,1,1,0,0,0,0,0,0,0,0,1,1,1,0,
+			0,1,1,1,0,0,0,0,0,0,0,0,1,1,1,0,
+			1,0,0,1,1,0,0,0,0,0,0,1,0,0,1,1,
+			1,1,0,0,1,0,0,0,0,0,0,1,1,0,0,1,
+			0,1,1,1,0,0,0,0,0,0,0,0,1,1,1,0,
+			0,1,1,1,0,0,0,0,0,0,0,0,1,1,1,0,
+			1,0,0,1,1,0,0,0,0,0,0,1,0,0,1,1,
+			1,1,0,0,1,0,0,0,0,0,0,1,1,0,0,1,
+			0,1,1,1,0,0,0,0,0,0,0,0,1,1,1,0,
+		};
+
+		for (std::size_t y = 0; y < ExtendedH; y++)
+		{
+			CHECK(std::equal(
+				ExpectedValues.begin() + ExtendedW * y, ExpectedValues.begin() + ExtendedW * (y + 1),
+				c.Display.PixelBuffer.begin() + (X2 + (Y2 + y) * c.Display.Width())
+			));
+		}
+		CHECK(c.DisplayChanged);
+		CHECK_EQ(c.V[0xF], 0);
+	}
+
+	SUBCASE("Two draws (extended mode, 16x16 sprite)")
+	{
+		Handler_DRW_Vx_Vy_n(c);
+		Handler_DRW_Vx_Vy_n(c);
+
+		constexpr std::array<std::uint8_t, ExtendedW * ExtendedH> ExpectedValues
+		{
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+
+		for (std::size_t y = 0; y < ExtendedH; y++)
+		{
+			CHECK(std::equal(
+				ExpectedValues.begin() + ExtendedW * y, ExpectedValues.begin() + ExtendedW * (y + 1),
+				c.Display.PixelBuffer.begin() + (X2 + (Y2 + y) * c.Display.Width())
+			));
+		}
+		CHECK(c.DisplayChanged);
 		CHECK_EQ(c.V[0xF], 1);
 	}
 }
@@ -1185,7 +1499,7 @@ TEST_CASE("Instruction: LD F, Vx")
 			Handler_LD_F_Vx(c);
 
 			CHECK_EQ(c.V[1], digit);
-			CHECK_EQ(c.I, digit * FontsetCharByteSize);
+			CHECK_EQ(c.I, FontsetAddress + digit * FontsetCharByteSize);
 		}
 	}
 
@@ -1401,6 +1715,786 @@ TEST_CASE("Instruction: LD Vx, [I]")
 			0x90, 0xA0, 0xB0, 0xC0, 0xD0, 0xE0, 0xF0, 0xFF,
 		};
 		CHECK(std::equal(ExpectedValues.begin(), ExpectedValues.end(), c.V.begin()));
+	}
+}
+
+TEST_CASE("Instruction: SCD n")
+{
+	constexpr std::size_t SpriteX{ 8 };
+	constexpr std::size_t SpriteY{ 8 };
+	constexpr std::size_t SpriteW{ 5 };
+	constexpr std::size_t SpriteH{ 4 };
+	constexpr std::size_t SpriteNumBytes{ 4 };
+
+	SContext c{};
+	c.Display.ExtendedMode = true;
+
+	// setup display pixel buffer by drawing a sprite
+	{
+		c.V[1] = SpriteX;
+		c.V[2] = SpriteY;
+		c.IR = 0x0120 | SpriteNumBytes;
+		c.I = 0x400;
+
+		constexpr std::array<std::uint8_t, SpriteNumBytes> InputSprite
+		{
+			0b01110000,
+			0b10011000,
+			0b11001000,
+			0b01110000,
+		};
+		std::copy(InputSprite.begin(), InputSprite.end(), c.Memory.begin() + c.I);
+		Handler_DRW_Vx_Vy_n(c);
+	}
+
+	c.V[1] = 0;
+	c.V[2] = 0;
+	c.IR = 0;
+	c.DisplayChanged = false;
+	c.V[0xF] = 0;
+
+	static constexpr std::size_t Padding{ 5 };
+	static constexpr std::size_t ExpectedW{ SpriteW + Padding * 2 };
+	static constexpr std::size_t ExpectedH{ SpriteH + Padding * 2 };
+	static constexpr std::size_t ExpectedX{ SpriteX - Padding };
+	static constexpr std::size_t ExpectedY{ SpriteY - Padding };
+	using ExpectedArray = std::array<std::uint8_t, ExpectedW * ExpectedH>;
+
+	const auto checkDisplayPixelBuffer = [&c](const ExpectedArray& expectedValues)
+	{
+		for (std::size_t y = 0; y < ExpectedH; y++)
+		{
+			CHECK(std::equal(
+				expectedValues.begin() + ExpectedW * y, expectedValues.begin() + ExpectedW * (y + 1),
+				c.Display.PixelBuffer.begin() + (ExpectedX + (ExpectedY + y) * c.Display.Width())
+			));
+		}
+	};
+
+	SUBCASE("Verify setup is correct")
+	{
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+			0,0,0,0,0,1,0,0,1,1,0,0,0,0,0,
+			0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,
+			0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+	}
+
+	SUBCASE("Scroll n=0")
+	{
+		c.IR = 0x0000;
+		Handler_SCD_n(c);
+
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+			0,0,0,0,0,1,0,0,1,1,0,0,0,0,0,
+			0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,
+			0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+		CHECK(c.DisplayChanged);
+	}
+
+	SUBCASE("Scroll n=4")
+	{
+		c.IR = 0x0004;
+		Handler_SCD_n(c);
+
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+			0,0,0,0,0,1,0,0,1,1,0,0,0,0,0,
+			0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,
+			0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+		CHECK(c.DisplayChanged);
+	}
+
+	SUBCASE("Scroll n=8")
+	{
+		c.IR = 0x0008;
+		Handler_SCD_n(c);
+
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+		CHECK(c.DisplayChanged);
+	}
+
+	SUBCASE("Scroll n=4 twice")
+	{
+		c.IR = 0x0004;
+		Handler_SCD_n(c);
+		Handler_SCD_n(c);
+
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+		CHECK(c.DisplayChanged);
+	}
+
+	SUBCASE("Scroll n=15")
+	{
+		c.IR = 0x000F;
+		Handler_SCD_n(c);
+
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+		CHECK(c.DisplayChanged);
+	}
+}
+
+TEST_CASE("Instruction: SCR")
+{
+	constexpr std::size_t SpriteX{ 8 };
+	constexpr std::size_t SpriteY{ 8 };
+	constexpr std::size_t SpriteW{ 5 };
+	constexpr std::size_t SpriteH{ 4 };
+	constexpr std::size_t SpriteNumBytes{ 4 };
+
+	SContext c{};
+	c.Display.ExtendedMode = true;
+	
+	// setup display pixel buffer by drawing a sprite
+	{
+		c.V[1] = SpriteX;
+		c.V[2] = SpriteY;
+		c.IR = 0x0120 | SpriteNumBytes;
+		c.I = 0x400;
+
+		constexpr std::array<std::uint8_t, SpriteNumBytes> InputSprite
+		{
+			0b01110000,
+			0b10011000,
+			0b11001000,
+			0b01110000,
+		};
+		std::copy(InputSprite.begin(), InputSprite.end(), c.Memory.begin() + c.I);
+		Handler_DRW_Vx_Vy_n(c);
+	} 
+
+	c.V[1] = 0;
+	c.V[2] = 0;
+	c.IR = 0;
+	c.DisplayChanged = false;
+	c.V[0xF] = 0;
+
+	static constexpr std::size_t Padding{ 5 };
+	static constexpr std::size_t ExpectedW{ SpriteW + Padding * 2 };
+	static constexpr std::size_t ExpectedH{ SpriteH + Padding * 2 };
+	static constexpr std::size_t ExpectedX{ SpriteX - Padding };
+	static constexpr std::size_t ExpectedY{ SpriteY - Padding };
+	using ExpectedArray = std::array<std::uint8_t, ExpectedW * ExpectedH>;
+
+	const auto checkDisplayPixelBuffer = [&c](const ExpectedArray& expectedValues)
+	{
+		for (std::size_t y = 0; y < ExpectedH; y++)
+		{
+			CHECK(std::equal(
+				expectedValues.begin() + ExpectedW * y, expectedValues.begin() + ExpectedW * (y + 1),
+				c.Display.PixelBuffer.begin() + (ExpectedX + (ExpectedY + y) * c.Display.Width())
+			));
+		}
+	};
+
+	SUBCASE("Verify setup is correct")
+	{
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+			0,0,0,0,0,1,0,0,1,1,0,0,0,0,0,
+			0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,
+			0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+	}
+
+	SUBCASE("Single scroll")
+	{
+		Handler_SCR(c);
+
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,
+			0,1,0,0,1,1,0,0,0,0,0,0,0,0,0,
+			0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,
+			0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+		CHECK(c.DisplayChanged);
+	}
+
+	SUBCASE("Two scrolls")
+	{
+		Handler_SCR(c);
+		Handler_SCR(c);
+
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+		CHECK(c.DisplayChanged);
+	}
+
+	SUBCASE("Three scrolls")
+	{
+		Handler_SCR(c);
+		Handler_SCR(c);
+		Handler_SCR(c);
+
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+		CHECK(c.DisplayChanged);
+	}
+}
+
+TEST_CASE("Instruction: SCL")
+{
+	constexpr std::size_t SpriteX{ 8 };
+	constexpr std::size_t SpriteY{ 8 };
+	constexpr std::size_t SpriteW{ 5 };
+	constexpr std::size_t SpriteH{ 4 };
+	constexpr std::size_t SpriteNumBytes{ 4 };
+
+	SContext c{};
+	c.Display.ExtendedMode = true;
+
+	// setup display pixel buffer by drawing a sprite
+	{
+		c.V[1] = SpriteX;
+		c.V[2] = SpriteY;
+		c.IR = 0x0120 | SpriteNumBytes;
+		c.I = 0x400;
+
+		constexpr std::array<std::uint8_t, SpriteNumBytes> InputSprite
+		{
+			0b01110000,
+			0b10011000,
+			0b11001000,
+			0b01110000,
+		};
+		std::copy(InputSprite.begin(), InputSprite.end(), c.Memory.begin() + c.I);
+		Handler_DRW_Vx_Vy_n(c);
+	}
+
+	c.V[1] = 0;
+	c.V[2] = 0;
+	c.IR = 0;
+	c.DisplayChanged = false;
+	c.V[0xF] = 0;
+
+	static constexpr std::size_t Padding{ 5 };
+	static constexpr std::size_t ExpectedW{ SpriteW + Padding * 2 };
+	static constexpr std::size_t ExpectedH{ SpriteH + Padding * 2 };
+	static constexpr std::size_t ExpectedX{ SpriteX - Padding };
+	static constexpr std::size_t ExpectedY{ SpriteY - Padding };
+	using ExpectedArray = std::array<std::uint8_t, ExpectedW * ExpectedH>;
+
+	const auto checkDisplayPixelBuffer = [&c](const ExpectedArray& expectedValues)
+	{
+		for (std::size_t y = 0; y < ExpectedH; y++)
+		{
+			CHECK(std::equal(
+				expectedValues.begin() + ExpectedW * y, expectedValues.begin() + ExpectedW * (y + 1),
+				c.Display.PixelBuffer.begin() + (ExpectedX + (ExpectedY + y) * c.Display.Width())
+			));
+		}
+	};
+
+	SUBCASE("Verify setup is correct")
+	{
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+			0,0,0,0,0,1,0,0,1,1,0,0,0,0,0,
+			0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,
+			0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+	}
+
+	SUBCASE("Single scroll")
+	{
+		Handler_SCL(c);
+
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,
+			0,0,0,0,0,0,0,0,0,1,0,0,1,1,0,
+			0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,
+			0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+		CHECK(c.DisplayChanged);
+	}
+
+	SUBCASE("Two scrolls")
+	{
+		Handler_SCL(c);
+		Handler_SCL(c);
+
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+		CHECK(c.DisplayChanged);
+	}
+
+	SUBCASE("Three scrolls")
+	{
+		Handler_SCL(c);
+		Handler_SCL(c);
+		Handler_SCL(c);
+
+		constexpr ExpectedArray ExpectedValues
+		{
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+		checkDisplayPixelBuffer(ExpectedValues);
+		CHECK(c.DisplayChanged);
+	}
+}
+
+TEST_CASE("Instruction: EXIT")
+{
+	SContext c{};
+	c.Exited = false;
+
+	Handler_EXIT(c);
+
+	CHECK(c.Exited);
+}
+
+TEST_CASE("Instruction: LOW")
+{
+	SContext c{};
+	c.DisplayChanged = false;
+
+	SUBCASE("Extended mode disabled")
+	{
+		c.Display.ExtendedMode = false;
+
+		Handler_LOW(c);
+
+		CHECK_EQ(c.Display.ExtendedMode, false);
+		CHECK_EQ(c.DisplayChanged, false);
+	}
+
+	SUBCASE("Extended mode enabled")
+	{
+		c.Display.ExtendedMode = true;
+
+		Handler_LOW(c);
+
+		CHECK_EQ(c.Display.ExtendedMode, false);
+		CHECK_EQ(c.DisplayChanged, true);
+	}
+}
+
+TEST_CASE("Instruction: HIGH")
+{
+	SContext c{};
+	c.DisplayChanged = false;
+
+	SUBCASE("Extended mode disabled")
+	{
+		c.Display.ExtendedMode = false;
+
+		Handler_HIGH(c);
+
+		CHECK_EQ(c.Display.ExtendedMode, true);
+		CHECK_EQ(c.DisplayChanged, true);
+	}
+
+	SUBCASE("Extended mode enabled")
+	{
+		c.Display.ExtendedMode = true;
+
+		Handler_HIGH(c);
+
+		CHECK_EQ(c.Display.ExtendedMode, true);
+		CHECK_EQ(c.DisplayChanged, false);
+	}
+}
+
+TEST_CASE("Instruction: LD HF, Vx")
+{
+	SContext c{};
+
+	SUBCASE("Valid font chars")
+	{
+		for (std::size_t digit = 0; digit < schip::FontsetCharCount; digit++)
+		{
+			c.V[1] = gsl::narrow<std::uint8_t>(digit);
+			c.I = 0;
+			c.IR = 0x0100;
+
+			Handler_LD_HF_Vx(c);
+
+			CHECK_EQ(c.V[1], digit);
+			CHECK_EQ(c.I, schip::FontsetAddress + digit * schip::FontsetCharByteSize);
+		}
+	}
+
+	SUBCASE("Invalid font chars")
+	{
+		c.V[1] = schip::FontsetCharCount;
+		c.I = 0;
+		c.IR = 0x0100;
+
+		CHECK_THROWS(Handler_LD_HF_Vx(c));
+
+		c.V[1] = schip::FontsetCharCount + 10;
+		c.I = 0;
+		c.IR = 0x0100;
+
+		CHECK_THROWS(Handler_LD_HF_Vx(c));
+	}
+}
+
+TEST_CASE("Instruction: LD R, Vx")
+{
+	SContext c{};
+	std::fill(c.V.begin(), c.V.end(), std::uint8_t(0));
+	std::fill(c.R.begin(), c.R.end(), std::uint8_t(0));
+
+	SUBCASE("Single flag")
+	{
+		c.IR = 0x0000;
+		c.V[0] = 0x12;
+
+		Handler_LD_R_Vx(c);
+
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedV
+		{
+			0x12, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		};
+		constexpr std::array<std::uint8_t, schip::NumberOfRPLFlags> ExpectedRPL
+		{
+			0x12, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		};
+		CHECK(std::equal(c.V.begin(), c.V.end(), ExpectedV.begin()));
+		CHECK(std::equal(c.R.begin(), c.R.end(), ExpectedRPL.begin()));
+	}
+
+	SUBCASE("Half of the flags")
+	{
+		c.IR = 0x0300;
+		c.V[0] = 0x12;
+		c.V[1] = 0x23;
+		c.V[2] = 0x34;
+		c.V[3] = 0x45;
+
+		Handler_LD_R_Vx(c);
+
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedV
+		{
+			0x12, 0x23, 0x34, 0x45, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		};
+		constexpr std::array<std::uint8_t, schip::NumberOfRPLFlags> ExpectedRPL
+		{
+			0x12, 0x23, 0x34, 0x45, 0x00, 0x00, 0x00, 0x00,
+		};
+		CHECK(std::equal(c.V.begin(), c.V.end(), ExpectedV.begin()));
+		CHECK(std::equal(c.R.begin(), c.R.end(), ExpectedRPL.begin()));
+	}
+
+	SUBCASE("All the flags")
+	{
+		c.IR = 0x0700;
+		c.V[0] = 0x12;
+		c.V[1] = 0x23;
+		c.V[2] = 0x34;
+		c.V[3] = 0x45;
+		c.V[4] = 0x56;
+		c.V[5] = 0x67;
+		c.V[6] = 0x78;
+		c.V[7] = 0x89;
+
+		Handler_LD_R_Vx(c);
+
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedV
+		{
+			0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		};
+		constexpr std::array<std::uint8_t, schip::NumberOfRPLFlags> ExpectedRPL
+		{
+			0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89,
+		};
+		CHECK(std::equal(c.V.begin(), c.V.end(), ExpectedV.begin()));
+		CHECK(std::equal(c.R.begin(), c.R.end(), ExpectedRPL.begin()));
+	}
+
+	SUBCASE("Out of bounds")
+	{
+		c.IR = 0x0A00;
+
+		CHECK_THROWS(Handler_LD_R_Vx(c));
+	}
+}
+
+TEST_CASE("Instruction: LD Vx, R")
+{
+	SContext c{};
+	std::fill(c.V.begin(), c.V.end(), std::uint8_t(0));
+	std::fill(c.R.begin(), c.R.end(), std::uint8_t(0));
+
+	SUBCASE("Single flag")
+	{
+		c.IR = 0x0000;
+		c.R[0] = 0x12;
+
+		Handler_LD_Vx_R(c);
+
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedV
+		{
+			0x12, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		};
+		constexpr std::array<std::uint8_t, schip::NumberOfRPLFlags> ExpectedRPL
+		{
+			0x12, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		};
+		CHECK(std::equal(c.V.begin(), c.V.end(), ExpectedV.begin()));
+		CHECK(std::equal(c.R.begin(), c.R.end(), ExpectedRPL.begin()));
+	}
+
+	SUBCASE("Half of the flags")
+	{
+		c.IR = 0x0300;
+		c.R[0] = 0x12;
+		c.R[1] = 0x23;
+		c.R[2] = 0x34;
+		c.R[3] = 0x45;
+
+		Handler_LD_Vx_R(c);
+
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedV
+		{
+			0x12, 0x23, 0x34, 0x45, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		};
+		constexpr std::array<std::uint8_t, schip::NumberOfRPLFlags> ExpectedRPL
+		{
+			0x12, 0x23, 0x34, 0x45, 0x00, 0x00, 0x00, 0x00,
+		};
+		CHECK(std::equal(c.V.begin(), c.V.end(), ExpectedV.begin()));
+		CHECK(std::equal(c.R.begin(), c.R.end(), ExpectedRPL.begin()));
+	}
+
+	SUBCASE("All the flags")
+	{
+		c.IR = 0x0700;
+		c.R[0] = 0x12;
+		c.R[1] = 0x23;
+		c.R[2] = 0x34;
+		c.R[3] = 0x45;
+		c.R[4] = 0x56;
+		c.R[5] = 0x67;
+		c.R[6] = 0x78;
+		c.R[7] = 0x89;
+
+		Handler_LD_Vx_R(c);
+
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedV
+		{
+			0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		};
+		constexpr std::array<std::uint8_t, schip::NumberOfRPLFlags> ExpectedRPL
+		{
+			0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89,
+		};
+		CHECK(std::equal(c.V.begin(), c.V.end(), ExpectedV.begin()));
+		CHECK(std::equal(c.R.begin(), c.R.end(), ExpectedRPL.begin()));
+	}
+
+	SUBCASE("Out of bounds")
+	{
+		c.IR = 0x0A00;
+
+		CHECK_THROWS(Handler_LD_Vx_R(c));
 	}
 }
 

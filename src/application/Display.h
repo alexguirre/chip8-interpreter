@@ -23,6 +23,9 @@ private:
 	SDL_Renderer* mRenderer;
 	std::array<c8::SDisplayPixelBuffer, PixelBufferCount> mPixelBuffers;
 	std::size_t mNextPixelBuffer;
+	bool mExtendedMode;
+	std::size_t mLogicalWidth;
+	std::size_t mLogicalHeight;
 
 public:
 	CDisplay();
@@ -34,5 +37,6 @@ public:
 	CDisplay& operator=(CDisplay&&) = default;
 
 	void Render();
+	void SetExtendedMode(bool extendedMode);
 	void UpdatePixelBuffer(const c8::SDisplayPixelBuffer& src);
 };

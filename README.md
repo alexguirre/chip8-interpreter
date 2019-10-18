@@ -75,3 +75,4 @@ Run `c8` with the argument `--help` to see usage help.
 - http://devernay.free.fr/hacks/chip8/C8TECH10.HTM
 - https://github.com/dmatlack/chip8
 - https://github.com/btimofeev/emuchip
+- https://github.com/mattmikolay/chip-8

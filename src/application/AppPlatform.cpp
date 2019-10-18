@@ -11,9 +11,10 @@ void CAppPlatform::GetKeyboardState(c8::SKeyboardState& dest)
 	mKeyboard->GetState(dest);
 }
 
-void CAppPlatform::UpdateDisplay(const c8::SDisplayPixelBuffer& pixelBuffer)
+void CAppPlatform::UpdateDisplay(const c8::SDisplay& display)
 {
-	mDisplay->UpdatePixelBuffer(pixelBuffer);
+	mDisplay->SetExtendedMode(display.ExtendedMode);
+	mDisplay->UpdatePixelBuffer(display.PixelBuffer);
 }
 
 void CAppPlatform::Beep(double frequency, std::chrono::milliseconds duration)

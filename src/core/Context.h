@@ -6,7 +6,20 @@
 namespace c8
 {
 	using SKeyboardState = std::array<bool, constants::KeyboardKeyCount>;
-	using SDisplayPixelBuffer = std::array<std::uint8_t, (constants::DisplayResolutionWidth * constants::DisplayResolutionHeight)>;
+	using SDisplayPixelBuffer = std::array<std::uint8_t, (constants::schip::ExtendedDisplayResolutionWidth * constants::schip::ExtendedDisplayResolutionHeight)>;
+
+	struct SDisplay
+	{
+		bool ExtendedMode;
+		SDisplayPixelBuffer PixelBuffer;
+
+		SDisplay();
+
+		void Reset();
+	
+		inline std::size_t Width() const { return ExtendedMode ? constants::schip::ExtendedDisplayResolutionWidth : constants::DisplayResolutionWidth; }
+		inline std::size_t Height() const { return ExtendedMode ? constants::schip::ExtendedDisplayResolutionHeight : constants::DisplayResolutionHeight; }
+	};
 
 	struct SContext
 	{
@@ -19,9 +32,11 @@ namespace c8
 		std::uint16_t IR;	// The current instruction opcode
 		std::array<std::uint16_t, constants::StackSize> Stack;
 		std::array<std::uint8_t, constants::MemorySize> Memory;
-		SDisplayPixelBuffer PixelBuffer;
-		bool PixelBufferDirty;
+		std::array<std::uint8_t, constants::schip::NumberOfRPLFlags> R; // RPL user flags
+		SDisplay Display;
+		bool DisplayChanged;
 		SKeyboardState Keyboard;
+		bool Exited;
 
 		SContext();
 
