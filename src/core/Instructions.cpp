@@ -225,34 +225,63 @@ static void Handler_RND_Vx_kk(SContext& c)
 
 static void Handler_DRW_Vx_Vy_n(SContext& c)
 {
-	// TODO: Dxy0 - DRW Vx, Vy, 0	- Show N-byte sprite from M(I) at coords (VX,VY), VF := collision. If N=0 and extended mode, show 16x16 sprite.
-
 	const std::uint8_t vx = c.V[c.X()];
 	const std::uint8_t vy = c.V[c.Y()];
 	const std::uint8_t n = c.N();
 
 	c.V[0xF] = 0; // collision flag to 0
-	for (std::size_t byteIndex = 0; byteIndex < n; byteIndex++)
+	if (n != 0)
 	{
-		const std::uint8_t byte = c.Memory[c.I + byteIndex];
-
-		for (std::size_t bitIndex = 0; bitIndex < 8; bitIndex++)
+		for (std::size_t byteIndex = 0; byteIndex < n; byteIndex++)
 		{
-			const std::uint8_t bit = (byte >> (7 - bitIndex)) & 1;
-			const std::size_t x = (vx + bitIndex) % c.Display.Width();
-			const std::size_t y = (vy + byteIndex) % c.Display.Height();
-			std::uint8_t& pixel = c.Display.PixelBuffer[x + y * c.Display.Width()];
+			const std::uint8_t byte = c.Memory[c.I + byteIndex];
 
-			// collision
-			if (bit && pixel)
+			for (std::size_t bitIndex = 0; bitIndex < 8; bitIndex++)
 			{
-				c.V[0xF] = 1;
-			}
+				const std::uint8_t bit = (byte >> (7 - bitIndex)) & 1;
+				const std::size_t x = (vx + bitIndex) % c.Display.Width();
+				const std::size_t y = (vy + byteIndex) % c.Display.Height();
+				std::uint8_t& pixel = c.Display.PixelBuffer[x + y * c.Display.Width()];
 
-			pixel ^= bit;
+				// collision
+				if (bit && pixel)
+				{
+					c.V[0xF] = 1;
+				}
+
+				pixel ^= bit;
+			}
 		}
+		c.DisplayChanged = true;
 	}
-	c.DisplayChanged = true;
+	else if (c.Display.ExtendedMode)
+	{
+		// Draw a 16x16 sprite.
+		// Each row consists of two contiguous bytes in memory to get the 16 pixels width
+		for (std::size_t row = 0; row < 16; row++)
+		{
+			for (std::size_t col = 0; col < 16; col++)
+			{
+				const std::size_t byteIndex = (row * 2) + (col / 8);
+				const std::uint8_t byte = c.Memory[c.I + byteIndex];
+
+				const std::size_t bitIndex = col % 8;
+				const std::uint8_t bit = (byte >> (7 - bitIndex)) & 1;
+				const std::size_t x = (vx + col) % c.Display.Width();
+				const std::size_t y = (vy + row) % c.Display.Height();
+				std::uint8_t& pixel = c.Display.PixelBuffer[x + y * c.Display.Width()];
+
+				// collision
+				if (bit && pixel)
+				{
+					c.V[0xF] = 1;
+				}
+
+				pixel ^= bit;
+			}
+		}
+		c.DisplayChanged = true;
+	}
 }
 
 static void Handler_SKP_Vx(SContext& c)
@@ -1218,6 +1247,89 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 		{
 			CHECK(std::equal(
 				ExpectedValues.begin() + W * y, ExpectedValues.begin() + W * (y + 1),
+				c.Display.PixelBuffer.begin() + (X2 + (Y2 + y) * c.Display.Width())
+			));
+		}
+		CHECK(c.DisplayChanged);
+		CHECK_EQ(c.V[0xF], 1);
+	}
+
+	constexpr std::size_t ExtendedW{ 16 };
+	constexpr std::size_t ExtendedH{ 16 };
+	constexpr std::array<std::uint8_t, 2 * 16> ExtendedInputSprite
+	{
+		0b01110000, 0b00001110,
+		0b10011000, 0b00010011,
+		0b11001000, 0b00011001,
+		0b01110000, 0b00001110,
+		0b01110000, 0b00001110,
+		0b10011000, 0b00010011,
+		0b11001000, 0b00011001,
+		0b01110000, 0b00001110,
+		0b01110000, 0b00001110,
+		0b10011000, 0b00010011,
+		0b11001000, 0b00011001,
+		0b01110000, 0b00001110,
+	};
+	std::copy(ExtendedInputSprite.begin(), ExtendedInputSprite.end(), c.Memory.begin() + c.I);
+	c.IR = 0x0120;
+
+	SUBCASE("Single draw (extended mode, 16x16 sprite)")
+	{
+		Handler_DRW_Vx_Vy_n(c);
+
+		constexpr std::array<std::uint8_t, ExtendedW * ExtendedH> ExpectedValues
+		{
+			0,1,1,1,0,0,0,0,0,0,0,0,1,1,1,0,
+			1,0,0,1,1,0,0,0,0,0,0,1,0,0,1,1,
+			1,1,0,0,1,0,0,0,0,0,0,1,1,0,0,1,
+			0,1,1,1,0,0,0,0,0,0,0,0,1,1,1,0,
+			0,1,1,1,0,0,0,0,0,0,0,0,1,1,1,0,
+			1,0,0,1,1,0,0,0,0,0,0,1,0,0,1,1,
+			1,1,0,0,1,0,0,0,0,0,0,1,1,0,0,1,
+			0,1,1,1,0,0,0,0,0,0,0,0,1,1,1,0,
+			0,1,1,1,0,0,0,0,0,0,0,0,1,1,1,0,
+			1,0,0,1,1,0,0,0,0,0,0,1,0,0,1,1,
+			1,1,0,0,1,0,0,0,0,0,0,1,1,0,0,1,
+			0,1,1,1,0,0,0,0,0,0,0,0,1,1,1,0,
+		};
+
+		for (std::size_t y = 0; y < ExtendedH; y++)
+		{
+			CHECK(std::equal(
+				ExpectedValues.begin() + ExtendedW * y, ExpectedValues.begin() + ExtendedW * (y + 1),
+				c.Display.PixelBuffer.begin() + (X2 + (Y2 + y) * c.Display.Width())
+			));
+		}
+		CHECK(c.DisplayChanged);
+		CHECK_EQ(c.V[0xF], 0);
+	}
+
+	SUBCASE("Two draws (extended mode, 16x16 sprite)")
+	{
+		Handler_DRW_Vx_Vy_n(c);
+		Handler_DRW_Vx_Vy_n(c);
+
+		constexpr std::array<std::uint8_t, ExtendedW * ExtendedH> ExpectedValues
+		{
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		};
+
+		for (std::size_t y = 0; y < ExtendedH; y++)
+		{
+			CHECK(std::equal(
+				ExpectedValues.begin() + ExtendedW * y, ExpectedValues.begin() + ExtendedW * (y + 1),
 				c.Display.PixelBuffer.begin() + (X2 + (Y2 + y) * c.Display.Width())
 			));
 		}
