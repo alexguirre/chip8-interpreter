@@ -95,4 +95,5 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Check
+        shell: pwsh
         run: .\tools\codeformat.ps1 -Check
