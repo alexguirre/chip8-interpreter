@@ -8,10 +8,11 @@
 namespace c8
 {
 	struct SContext;
+	struct SOpCode;
 	struct SInstruction;
 
 	using FInstructionHandler = std::function<void(SContext&)>;
-	using FInstructionToString = std::function<std::string(const SInstruction&, const SContext&)>;
+	using FInstructionToString = std::function<std::string(const SInstruction&, SOpCode)>;
 
 	struct SInstruction
 	{

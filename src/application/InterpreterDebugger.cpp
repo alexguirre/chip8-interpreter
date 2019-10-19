@@ -252,8 +252,6 @@ void CInterpreterDebugger::DrawMemory()
 
 void CInterpreterDebugger::DrawDisassembly()
 {
-	SContext contextCopy =
-		mInterpreter.Context(); // required for instructions ToString, TODO: optimize
 	const SContext& c = mInterpreter.Context();
 
 	if (ImGui::BeginChild("Disassembly",
@@ -371,15 +369,13 @@ void CInterpreterDebugger::DrawDisassembly()
 					}
 					ImGui::SameLine();
 
-					std::uint16_t opcode = c.Memory[addr] << 8 | c.Memory[addr + 1];
-					contextCopy.PC = gsl::narrow<std::uint16_t>(addr);
-					contextCopy.IR = opcode;
+					SOpCode opcode = c.Memory[addr] << 8 | c.Memory[addr + 1];
 
 					auto instOpt = SInstruction::TryFindInstruction(opcode);
 					if (instOpt.has_value())
 					{
 						const SInstruction& inst = instOpt.value().get();
-						std::string instStr = inst.ToString(inst, contextCopy);
+						std::string instStr = inst.ToString(inst, opcode);
 						ImGui::Text("%s", instStr.c_str());
 					}
 					else

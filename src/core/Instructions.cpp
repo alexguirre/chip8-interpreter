@@ -1,5 +1,5 @@
 #include "Instructions.h"
-#include "Interpreter.h"
+#include "Context.h"
 #include <doctest/doctest.h>
 #include <gsl/gsl_util>
 #include <iomanip>
@@ -9,12 +9,12 @@
 using namespace c8;
 using namespace c8::constants;
 
-static std::string ToString_NAME(const SInstruction& i, const SContext&)
+static std::string ToString_NAME(const SInstruction& i, SOpCode)
 {
 	return i.Name;
 }
 
-static std::string ToString_NAME_nnn(const SInstruction& i, const SContext& c)
+static std::string ToString_NAME_nnn(const SInstruction& i, SOpCode c)
 {
 	std::ostringstream ss;
 	ss << i.Name << " " << std::uppercase << std::hex << std::setfill('0') << std::setw(3)
@@ -22,7 +22,7 @@ static std::string ToString_NAME_nnn(const SInstruction& i, const SContext& c)
 	return ss.str();
 }
 
-static std::string ToString_NAME_Vx_kk(const SInstruction& i, const SContext& c)
+static std::string ToString_NAME_Vx_kk(const SInstruction& i, SOpCode c)
 {
 	std::ostringstream ss;
 	ss << i.Name << " V" << std::uppercase << std::hex << static_cast<std::uint32_t>(c.X()) << ", "
@@ -31,7 +31,7 @@ static std::string ToString_NAME_Vx_kk(const SInstruction& i, const SContext& c)
 	return ss.str();
 }
 
-static std::string ToString_NAME_Vx_Vy(const SInstruction& i, const SContext& c)
+static std::string ToString_NAME_Vx_Vy(const SInstruction& i, SOpCode c)
 {
 	std::ostringstream ss;
 	ss << i.Name << " V" << std::uppercase << std::hex << static_cast<std::uint32_t>(c.X()) << ", V"
@@ -39,7 +39,7 @@ static std::string ToString_NAME_Vx_Vy(const SInstruction& i, const SContext& c)
 	return ss.str();
 }
 
-static std::string ToString_NAME_Vx(const SInstruction& i, const SContext& c)
+static std::string ToString_NAME_Vx(const SInstruction& i, SOpCode c)
 {
 	std::ostringstream ss;
 	ss << i.Name << " V" << std::uppercase << std::uppercase << std::hex
@@ -47,8 +47,7 @@ static std::string ToString_NAME_Vx(const SInstruction& i, const SContext& c)
 	return ss.str();
 }
 
-static std::string
-ToString_NAME_dst_nnn(const SInstruction& i, const SContext& c, std::string_view dstName)
+static std::string ToString_NAME_dst_nnn(const SInstruction& i, SOpCode c, std::string_view dstName)
 {
 	std::ostringstream ss;
 	ss << i.Name << " " << dstName << ", " << std::uppercase << std::hex << std::setfill('0')
@@ -56,7 +55,7 @@ ToString_NAME_dst_nnn(const SInstruction& i, const SContext& c, std::string_view
 	return ss.str();
 }
 
-static std::string ToString_NAME_Vx_Vy_n(const SInstruction& i, const SContext& c)
+static std::string ToString_NAME_Vx_Vy_n(const SInstruction& i, SOpCode c)
 {
 	std::ostringstream ss;
 	ss << i.Name << " V" << std::uppercase << std::hex << static_cast<std::uint32_t>(c.X()) << ", V"
@@ -65,8 +64,7 @@ static std::string ToString_NAME_Vx_Vy_n(const SInstruction& i, const SContext& 
 	return ss.str();
 }
 
-static std::string
-ToString_NAME_Vx_src(const SInstruction& i, const SContext& c, std::string_view srcName)
+static std::string ToString_NAME_Vx_src(const SInstruction& i, SOpCode c, std::string_view srcName)
 {
 	std::ostringstream ss;
 	ss << i.Name << " V" << std::uppercase << std::uppercase << std::hex
@@ -74,8 +72,7 @@ ToString_NAME_Vx_src(const SInstruction& i, const SContext& c, std::string_view 
 	return ss.str();
 }
 
-static std::string
-ToString_NAME_dst_Vx(const SInstruction& i, const SContext& c, std::string_view dstName)
+static std::string ToString_NAME_dst_Vx(const SInstruction& i, SOpCode c, std::string_view dstName)
 {
 	std::ostringstream ss;
 	ss << i.Name << " " << dstName << ", V" << std::uppercase << std::uppercase << std::hex
@@ -83,7 +80,7 @@ ToString_NAME_dst_Vx(const SInstruction& i, const SContext& c, std::string_view 
 	return ss.str();
 }
 
-static std::string ToString_NAME_n(const SInstruction&, const SContext&)
+static std::string ToString_NAME_n(const SInstruction&, SOpCode)
 {
 	throw std::runtime_error("Function not yet implemented");
 }

@@ -31,6 +31,22 @@ namespace c8
 		}
 	};
 
+	struct SOpCode
+	{
+		std::uint16_t Value;
+
+		inline SOpCode() : Value(0) {}
+		inline SOpCode(std::uint16_t value) : Value(value) {}
+
+		inline operator std::uint16_t() const { return Value; }
+
+		inline std::uint8_t X() const { return (Value & 0x0F00) >> 8; }
+		inline std::uint8_t Y() const { return (Value & 0x00F0) >> 4; }
+		inline std::uint16_t NNN() const { return (Value & 0x0FFF); }
+		inline std::uint8_t KK() const { return (Value & 0x00FF); }
+		inline std::uint8_t N() const { return (Value & 0x000F); }
+	};
+
 	struct SContext
 	{
 		std::array<std::uint8_t, constants::NumberOfRegisters> V; // General purpose registers
@@ -39,7 +55,7 @@ namespace c8
 		std::uint8_t SP;                                          // The stack pointer
 		std::uint8_t DT;                                          // The delay timer
 		std::uint8_t ST;                                          // The sound timer
-		std::uint16_t IR;                                         // The current instruction opcode
+		SOpCode IR;                                               // The current instruction opcode
 		std::array<std::uint16_t, constants::StackSize> Stack;
 		std::array<std::uint8_t, constants::MemorySize> Memory;
 		std::array<std::uint8_t, constants::schip::NumberOfRPLFlags> R; // RPL user flags
@@ -52,10 +68,10 @@ namespace c8
 
 		void Reset();
 
-		inline std::uint8_t X() const { return (IR & 0x0F00) >> 8; }
-		inline std::uint8_t Y() const { return (IR & 0x00F0) >> 4; }
-		inline std::uint16_t NNN() const { return (IR & 0x0FFF); }
-		inline std::uint8_t KK() const { return (IR & 0x00FF); }
-		inline std::uint8_t N() const { return (IR & 0x000F); }
+		inline std::uint8_t X() const { return IR.X(); }
+		inline std::uint8_t Y() const { return IR.Y(); }
+		inline std::uint16_t NNN() const { return IR.NNN(); }
+		inline std::uint8_t KK() const { return IR.KK(); }
+		inline std::uint8_t N() const { return IR.N(); }
 	};
 }
