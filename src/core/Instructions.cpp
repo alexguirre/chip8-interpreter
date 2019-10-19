@@ -597,58 +597,58 @@ TEST_CASE("Instruction ToString")
 					[](SContext&) {},
 					0x0000,
 					0x0000,
-					[](const SInstruction&, const SContext&) {
+					[](const SInstruction&, SOpCode) {
 						return std::string{};
 					} };
-	SContext c{};
+	SOpCode c{};
 
 	SUBCASE("NAME") { CHECK(ToString_NAME(i, c) == "A"); }
 
 	SUBCASE("NAME nnn")
 	{
-		c.IR = 0x0012;
+		c = 0x0012;
 		CHECK(ToString_NAME_nnn(i, c) == "A 012");
 	}
 
 	SUBCASE("NAME Vx, kk")
 	{
-		c.IR = 0x0123;
+		c = 0x0123;
 		CHECK(ToString_NAME_Vx_kk(i, c) == "A V1, 23");
 	}
 
 	SUBCASE("NAME Vx, Vy")
 	{
-		c.IR = 0x0120;
+		c = 0x0120;
 		CHECK(ToString_NAME_Vx_Vy(i, c) == "A V1, V2");
 	}
 
 	SUBCASE("NAME Vx")
 	{
-		c.IR = 0x0100;
+		c = 0x0100;
 		CHECK(ToString_NAME_Vx(i, c) == "A V1");
 	}
 
 	SUBCASE("NAME dst, nnn")
 	{
-		c.IR = 0x0012;
+		c = 0x0012;
 		CHECK(ToString_NAME_dst_nnn(i, c, "D") == "A D, 012");
 	}
 
 	SUBCASE("NAME Vx, Vy, n")
 	{
-		c.IR = 0x0123;
+		c = 0x0123;
 		CHECK(ToString_NAME_Vx_Vy_n(i, c) == "A V1, V2, 3");
 	}
 
 	SUBCASE("NAME Vx, src")
 	{
-		c.IR = 0x0100;
+		c = 0x0100;
 		CHECK(ToString_NAME_Vx_src(i, c, "S") == "A V1, S");
 	}
 
 	SUBCASE("NAME dst, Vx")
 	{
-		c.IR = 0x0100;
+		c = 0x0100;
 		CHECK(ToString_NAME_dst_Vx(i, c, "D") == "A D, V1");
 	}
 }
