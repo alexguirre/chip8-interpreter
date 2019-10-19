@@ -1,5 +1,7 @@
 #include "AppPlatform.h"
 #include "InterpreterDebugger.h"
+#include <core/Constants.h>
+#include <core/Disassembler.h>
 #include <core/Interpreter.h>
 #include <gsl/gsl_util>
 #include <iostream>
@@ -7,6 +9,19 @@
 #include <tclap/CmdLine.h>
 #include <thread>
 #include <vector>
+
+void PrintDisassembly(const c8::CInterpreter& interpreter)
+{
+	const c8::CDisassembler d;
+	const c8::SDisassembly disassembly =
+		d.Disassemble(c8::constants::ProgramStartAddress, interpreter.Context().Memory);
+
+	for (auto& l : disassembly)
+	{
+		std::cout << std::uppercase << std::hex << std::setfill('0') << std::setw(4) << l.Address
+				  << '\t' << l.OpCode << '\t' << l.Source << '\n';
+	}
+}
 
 int main(int argc, char* argv[])
 {
@@ -20,9 +35,14 @@ int main(int argc, char* argv[])
 								 "debugger",
 								 "Specifies whether to open the debugger GUI.",
 								 false);
+	TCLAP::SwitchArg disassemblyArg("p",
+									"print-disassembly",
+									"Prints the disassembly of the program to standard output.",
+									false);
 
 	cmd.add(inputArg);
 	cmd.add(debuggerArg);
+	cmd.add(disassemblyArg);
 
 	cmd.parse(argc, argv);
 
@@ -34,6 +54,11 @@ int main(int argc, char* argv[])
 		std::shared_ptr<CAppPlatform> platform = std::make_shared<CAppPlatform>();
 		c8::CInterpreter interpreter(platform);
 		interpreter.LoadProgram(inputArg.getValue());
+
+		if (disassemblyArg.getValue())
+		{
+			PrintDisassembly(interpreter);
+		}
 
 		std::optional<CInterpreterDebugger> debugger{ std::nullopt };
 		if (debuggerArg.getValue())
