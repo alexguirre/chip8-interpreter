@@ -14,6 +14,14 @@ namespace c8
 	using FInstructionHandler = std::function<void(SContext&)>;
 	using FInstructionToString = std::function<std::string(const SInstruction&, SOpCode)>;
 
+	enum class EInstructionKind
+	{
+		Other = 0,
+		Branch = 1,
+		Return = 2,
+		Exit = 3,
+	};
+
 	struct SInstruction
 	{
 		std::string Name;
@@ -21,6 +29,7 @@ namespace c8
 		std::uint16_t Opcode;
 		std::uint16_t OpcodeMask;
 		FInstructionToString ToString;
+		EInstructionKind Kind;
 
 		static const std::vector<SInstruction> InstructionSet;
 
