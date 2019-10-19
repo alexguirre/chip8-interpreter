@@ -1,10 +1,10 @@
 #include "Instructions.h"
-#include <sstream>
-#include <random>
-#include <iomanip>
-#include <gsl/gsl_util>
 #include "Interpreter.h"
 #include <doctest/doctest.h>
+#include <gsl/gsl_util>
+#include <iomanip>
+#include <random>
+#include <sstream>
 
 using namespace c8;
 using namespace c8::constants;
@@ -17,57 +17,69 @@ static std::string ToString_NAME(const SInstruction& i, const SContext&)
 static std::string ToString_NAME_nnn(const SInstruction& i, const SContext& c)
 {
 	std::ostringstream ss;
-	ss << i.Name << " " << std::uppercase << std::hex << std::setfill('0') << std::setw(3) << static_cast<std::uint32_t>(c.NNN());
+	ss << i.Name << " " << std::uppercase << std::hex << std::setfill('0') << std::setw(3)
+	   << static_cast<std::uint32_t>(c.NNN());
 	return ss.str();
 }
 
 static std::string ToString_NAME_Vx_kk(const SInstruction& i, const SContext& c)
 {
 	std::ostringstream ss;
-	ss << i.Name << " V" << std::uppercase << std::hex << static_cast<std::uint32_t>(c.X()) << ", " << std::uppercase << std::hex << std::setfill('0') << std::setw(2) << static_cast<std::uint32_t>(c.KK());
+	ss << i.Name << " V" << std::uppercase << std::hex << static_cast<std::uint32_t>(c.X()) << ", "
+	   << std::uppercase << std::hex << std::setfill('0') << std::setw(2)
+	   << static_cast<std::uint32_t>(c.KK());
 	return ss.str();
 }
 
 static std::string ToString_NAME_Vx_Vy(const SInstruction& i, const SContext& c)
 {
 	std::ostringstream ss;
-	ss << i.Name << " V" << std::uppercase << std::hex << static_cast<std::uint32_t>(c.X()) << ", V" << std::uppercase << std::hex << static_cast<std::uint32_t>(c.Y());
+	ss << i.Name << " V" << std::uppercase << std::hex << static_cast<std::uint32_t>(c.X()) << ", V"
+	   << std::uppercase << std::hex << static_cast<std::uint32_t>(c.Y());
 	return ss.str();
 }
 
 static std::string ToString_NAME_Vx(const SInstruction& i, const SContext& c)
 {
 	std::ostringstream ss;
-	ss << i.Name << " V" << std::uppercase << std::uppercase << std::hex << static_cast<std::uint32_t>(c.X());
+	ss << i.Name << " V" << std::uppercase << std::uppercase << std::hex
+	   << static_cast<std::uint32_t>(c.X());
 	return ss.str();
 }
 
-static std::string ToString_NAME_dst_nnn(const SInstruction& i, const SContext& c, std::string_view dstName)
+static std::string
+ToString_NAME_dst_nnn(const SInstruction& i, const SContext& c, std::string_view dstName)
 {
 	std::ostringstream ss;
-	ss << i.Name << " " << dstName <<", " << std::uppercase << std::hex << std::setfill('0') << std::setw(3) << static_cast<std::uint32_t>(c.NNN());
+	ss << i.Name << " " << dstName << ", " << std::uppercase << std::hex << std::setfill('0')
+	   << std::setw(3) << static_cast<std::uint32_t>(c.NNN());
 	return ss.str();
 }
 
 static std::string ToString_NAME_Vx_Vy_n(const SInstruction& i, const SContext& c)
 {
 	std::ostringstream ss;
-	ss << i.Name << " V" << std::uppercase << std::hex << static_cast<std::uint32_t>(c.X()) << ", V" << std::uppercase << std::hex << static_cast<std::uint32_t>(c.Y())
-		<< ", " << std::uppercase << std::hex << static_cast<std::uint32_t>(c.N());
+	ss << i.Name << " V" << std::uppercase << std::hex << static_cast<std::uint32_t>(c.X()) << ", V"
+	   << std::uppercase << std::hex << static_cast<std::uint32_t>(c.Y()) << ", " << std::uppercase
+	   << std::hex << static_cast<std::uint32_t>(c.N());
 	return ss.str();
 }
 
-static std::string ToString_NAME_Vx_src(const SInstruction& i, const SContext& c, std::string_view srcName)
+static std::string
+ToString_NAME_Vx_src(const SInstruction& i, const SContext& c, std::string_view srcName)
 {
 	std::ostringstream ss;
-	ss << i.Name << " V" << std::uppercase << std::uppercase << std::hex << static_cast<std::uint32_t>(c.X()) << ", " << srcName;
+	ss << i.Name << " V" << std::uppercase << std::uppercase << std::hex
+	   << static_cast<std::uint32_t>(c.X()) << ", " << srcName;
 	return ss.str();
 }
 
-static std::string ToString_NAME_dst_Vx(const SInstruction& i, const SContext& c, std::string_view dstName)
+static std::string
+ToString_NAME_dst_Vx(const SInstruction& i, const SContext& c, std::string_view dstName)
 {
 	std::ostringstream ss;
-	ss << i.Name << " " << dstName << ", V" << std::uppercase << std::uppercase << std::hex << static_cast<std::uint32_t>(c.X());
+	ss << i.Name << " " << dstName << ", V" << std::uppercase << std::uppercase << std::hex
+	   << static_cast<std::uint32_t>(c.X());
 	return ss.str();
 }
 
@@ -216,7 +228,8 @@ static void Handler_RND_Vx_kk(SContext& c)
 {
 	static std::mt19937 gen{ std::random_device{}() };
 	static std::uniform_int_distribution<std::int32_t> dist{
-		std::numeric_limits<std::uint8_t>::min(), std::numeric_limits<std::uint8_t>::max()
+		std::numeric_limits<std::uint8_t>::min(),
+		std::numeric_limits<std::uint8_t>::max()
 	};
 
 	const std::uint8_t rnd = gsl::narrow<std::uint8_t>(dist(gen));
@@ -393,20 +406,16 @@ static void Handler_SCD_n(SContext& c)
 		if (srcY < displayHeight)
 		{
 			// copy the src row to the dst row
-			std::copy(
-				c.Display.PixelBuffer.begin() + (srcY * displayWidth),       // src begin
-				c.Display.PixelBuffer.begin() + ((srcY + 1) * displayWidth), // src end
-				c.Display.PixelBuffer.begin() + (y * displayWidth)           // dst begin
-			);
+			std::copy(c.Display.PixelBuffer.begin() + (srcY * displayWidth),       // src begin
+					  c.Display.PixelBuffer.begin() + ((srcY + 1) * displayWidth), // src end
+					  c.Display.PixelBuffer.begin() + (y * displayWidth));         // dst begin
 		}
 		else
 		{
 			// the src row out of bounds, so just fill the dst row with 0s
-			std::fill_n(
-				c.Display.PixelBuffer.begin() + (y * displayWidth),
-				displayWidth,
-				std::uint8_t(0)
-			);
+			std::fill_n(c.Display.PixelBuffer.begin() + (y * displayWidth),
+						displayWidth,
+						std::uint8_t(0));
 		}
 	}
 
@@ -425,7 +434,8 @@ static void Handler_SCR(SContext& c)
 		{
 			const std::size_t srcX = x + PixelsToScroll;
 			const std::size_t srcY = y;
-			c.Display.PixelBuffer[x + y * displayWidth] = srcX >= displayWidth ? 0 : c.Display.PixelBuffer[srcX + srcY * displayWidth];
+			c.Display.PixelBuffer[x + y * displayWidth] =
+				srcX >= displayWidth ? 0 : c.Display.PixelBuffer[srcX + srcY * displayWidth];
 		}
 	}
 
@@ -444,7 +454,8 @@ static void Handler_SCL(SContext& c)
 		{
 			const std::size_t srcX = x - PixelsToScroll;
 			const std::size_t srcY = y;
-			c.Display.PixelBuffer[x + y * displayWidth] = x < PixelsToScroll ? 0 : c.Display.PixelBuffer[srcX + srcY * displayWidth];
+			c.Display.PixelBuffer[x + y * displayWidth] =
+				x < PixelsToScroll ? 0 : c.Display.PixelBuffer[srcX + srcY * displayWidth];
 		}
 	}
 
@@ -488,11 +499,7 @@ static void Handler_LD_R_Vx(SContext& c)
 	const std::size_t x = c.X();
 	Expects(x < schip::NumberOfRPLFlags);
 
-	std::copy(
-		c.V.begin(),
-		std::next(c.V.begin(), x + 1),
-		c.R.begin()
-	);
+	std::copy(c.V.begin(), std::next(c.V.begin(), x + 1), c.R.begin());
 }
 
 static void Handler_LD_Vx_R(SContext& c)
@@ -500,17 +507,14 @@ static void Handler_LD_Vx_R(SContext& c)
 	const std::size_t x = c.X();
 	Expects(x < schip::NumberOfRPLFlags);
 
-	std::copy(
-		c.R.begin(),
-		std::next(c.R.begin(), x + 1),
-		c.V.begin()
-	);
+	std::copy(c.R.begin(), std::next(c.R.begin(), x + 1), c.V.begin());
 }
 
 using namespace std::placeholders;
 
 namespace c8
 {
+	// clang-format off
 	const std::vector<SInstruction> SInstruction::InstructionSet =
 	{
 		{ "CLS",	Handler_CLS,			0x00E0,	0xF0FF,	ToString_NAME									},
@@ -559,17 +563,21 @@ namespace c8
 		{ "LD",		Handler_LD_R_Vx,		0xF075,	0xF0FF,	std::bind(ToString_NAME_dst_Vx, _1, _2, "R")	},
 		{ "LD",		Handler_LD_Vx_R,		0xF085,	0xF0FF,	std::bind(ToString_NAME_Vx_src, _1, _2, "R")	},
 	};
+	// clang-format on
 }
 
 TEST_CASE("Instruction ToString")
 {
-	SInstruction i{ "A", [](SContext&) {}, 0x0000, 0x0000, [](const SInstruction&, const SContext&) { return std::string{}; } };
+	SInstruction i{ "A",
+					[](SContext&) {},
+					0x0000,
+					0x0000,
+					[](const SInstruction&, const SContext&) {
+						return std::string{};
+					} };
 	SContext c{};
 
-	SUBCASE("NAME")
-	{		
-		CHECK(ToString_NAME(i, c) == "A");
-	}
+	SUBCASE("NAME") { CHECK(ToString_NAME(i, c) == "A"); }
 
 	SUBCASE("NAME nnn")
 	{
@@ -628,9 +636,11 @@ TEST_CASE("Instruction: CLS")
 	std::fill(c.Display.PixelBuffer.begin(), c.Display.PixelBuffer.end(), std::uint8_t{ 1 });
 
 	Handler_CLS(c);
-	
+
 	CHECK(c.DisplayChanged);
-	CHECK(std::all_of(c.Display.PixelBuffer.begin(), c.Display.PixelBuffer.end(), [](std::uint8_t b) { return b == 0; }));
+	CHECK(std::all_of(c.Display.PixelBuffer.begin(),
+					  c.Display.PixelBuffer.end(),
+					  [](std::uint8_t b) { return b == 0; }));
 }
 
 TEST_CASE("Instruction: RET")
@@ -707,7 +717,7 @@ TEST_CASE("Instruction: CALL nnn")
 TEST_CASE("Instruction: SE Vx, kk")
 {
 	SContext c{};
-	
+
 	SUBCASE("Skip:    Vx == kk")
 	{
 		c.PC = 0;
@@ -892,7 +902,7 @@ TEST_CASE("Instruction: ADD Vx, Vy")
 
 		Handler_ADD_Vx_Vy(c);
 
-		CHECK_EQ(c.V[1], 0x50); // 0xA0 + 0xB0 = 0x150 
+		CHECK_EQ(c.V[1], 0x50); // 0xA0 + 0xB0 = 0x150
 		CHECK_EQ(c.V[2], 0xB0);
 		CHECK_EQ(c.V[0xF], 1);
 	}
@@ -905,7 +915,7 @@ TEST_CASE("Instruction: ADD Vx, Vy")
 
 		Handler_ADD_Vx_Vy(c);
 
-		CHECK_EQ(c.V[1], 0); // 0xF0 + 0x10 = 0x100 
+		CHECK_EQ(c.V[1], 0); // 0xF0 + 0x10 = 0x100
 		CHECK_EQ(c.V[2], 0xF0);
 		CHECK_EQ(c.V[0xF], 1);
 	}
@@ -1146,6 +1156,7 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 	c.DisplayChanged = false;
 	c.V[0xF] = 0xCD;
 
+	// clang-format off
 	constexpr std::array<std::uint8_t, N> InputSprite
 	{
 		0b01110000,
@@ -1153,12 +1164,14 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 		0b11001000,
 		0b01110000,
 	};
+	// clang-format on
 	std::copy(InputSprite.begin(), InputSprite.end(), c.Memory.begin() + c.I);
 
 	SUBCASE("Single draw")
 	{
 		Handler_DRW_Vx_Vy_n(c);
 
+		// clang-format off
 		constexpr std::array<std::uint8_t, W * H> ExpectedValues
 		{
 			0,1,1,1,0,
@@ -1166,12 +1179,13 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 			1,1,0,0,1,
 			0,1,1,1,0,
 		};
+		// clang-format on
+
 		for (std::size_t y = 0; y < H; y++)
 		{
-			CHECK(std::equal(
-				ExpectedValues.begin() + W * y, ExpectedValues.begin() + W * (y + 1),
-				c.Display.PixelBuffer.begin() + (X + (Y + y) * c.Display.Width())
-			));
+			CHECK(std::equal(ExpectedValues.begin() + W * y,
+							 ExpectedValues.begin() + W * (y + 1),
+							 c.Display.PixelBuffer.begin() + (X + (Y + y) * c.Display.Width())));
 		}
 		CHECK(c.DisplayChanged);
 		CHECK_EQ(c.V[0xF], 0);
@@ -1183,6 +1197,7 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 
 		Handler_DRW_Vx_Vy_n(c);
 
+		// clang-format off
 		constexpr std::array<std::uint8_t, W * H> ExpectedValues
 		{
 			0,0,0,0,0,
@@ -1190,12 +1205,13 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 			0,0,0,0,0,
 			0,0,0,0,0,
 		};
+		// clang-format on
+
 		for (std::size_t y = 0; y < H; y++)
 		{
-			CHECK(std::equal(
-				ExpectedValues.begin() + W * y, ExpectedValues.begin() + W * (y + 1),
-				c.Display.PixelBuffer.begin() + (X + (Y + y) * c.Display.Width())
-			));
+			CHECK(std::equal(ExpectedValues.begin() + W * y,
+							 ExpectedValues.begin() + W * (y + 1),
+							 c.Display.PixelBuffer.begin() + (X + (Y + y) * c.Display.Width())));
 		}
 		CHECK(c.DisplayChanged);
 		CHECK_EQ(c.V[0xF], 1);
@@ -1212,6 +1228,7 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 	{
 		Handler_DRW_Vx_Vy_n(c);
 
+		// clang-format off
 		constexpr std::array<std::uint8_t, W * H> ExpectedValues
 		{
 			0,1,1,1,0,
@@ -1219,12 +1236,13 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 			1,1,0,0,1,
 			0,1,1,1,0,
 		};
+		// clang-format on
+
 		for (std::size_t y = 0; y < H; y++)
 		{
-			CHECK(std::equal(
-				ExpectedValues.begin() + W * y, ExpectedValues.begin() + W * (y + 1),
-				c.Display.PixelBuffer.begin() + (X2 + (Y2 + y) * c.Display.Width())
-			));
+			CHECK(std::equal(ExpectedValues.begin() + W * y,
+							 ExpectedValues.begin() + W * (y + 1),
+							 c.Display.PixelBuffer.begin() + (X2 + (Y2 + y) * c.Display.Width())));
 		}
 		CHECK(c.DisplayChanged);
 		CHECK_EQ(c.V[0xF], 0);
@@ -1236,6 +1254,7 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 
 		Handler_DRW_Vx_Vy_n(c);
 
+		// clang-format off
 		constexpr std::array<std::uint8_t, W * H> ExpectedValues
 		{
 			0,0,0,0,0,
@@ -1243,12 +1262,13 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 			0,0,0,0,0,
 			0,0,0,0,0,
 		};
+		// clang-format on
+
 		for (std::size_t y = 0; y < H; y++)
 		{
-			CHECK(std::equal(
-				ExpectedValues.begin() + W * y, ExpectedValues.begin() + W * (y + 1),
-				c.Display.PixelBuffer.begin() + (X2 + (Y2 + y) * c.Display.Width())
-			));
+			CHECK(std::equal(ExpectedValues.begin() + W * y,
+							 ExpectedValues.begin() + W * (y + 1),
+							 c.Display.PixelBuffer.begin() + (X2 + (Y2 + y) * c.Display.Width())));
 		}
 		CHECK(c.DisplayChanged);
 		CHECK_EQ(c.V[0xF], 1);
@@ -1256,6 +1276,7 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 
 	constexpr std::size_t ExtendedW{ 16 };
 	constexpr std::size_t ExtendedH{ 16 };
+	// clang-format off
 	constexpr std::array<std::uint8_t, 2 * 16> ExtendedInputSprite
 	{
 		0b01110000, 0b00001110,
@@ -1271,6 +1292,7 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 		0b11001000, 0b00011001,
 		0b01110000, 0b00001110,
 	};
+	// clang-format on
 	std::copy(ExtendedInputSprite.begin(), ExtendedInputSprite.end(), c.Memory.begin() + c.I);
 	c.IR = 0x0120;
 
@@ -1278,6 +1300,7 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 	{
 		Handler_DRW_Vx_Vy_n(c);
 
+		// clang-format off
 		constexpr std::array<std::uint8_t, ExtendedW * ExtendedH> ExpectedValues
 		{
 			0,1,1,1,0,0,0,0,0,0,0,0,1,1,1,0,
@@ -1293,13 +1316,13 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 			1,1,0,0,1,0,0,0,0,0,0,1,1,0,0,1,
 			0,1,1,1,0,0,0,0,0,0,0,0,1,1,1,0,
 		};
+		// clang-format on
 
 		for (std::size_t y = 0; y < ExtendedH; y++)
 		{
-			CHECK(std::equal(
-				ExpectedValues.begin() + ExtendedW * y, ExpectedValues.begin() + ExtendedW * (y + 1),
-				c.Display.PixelBuffer.begin() + (X2 + (Y2 + y) * c.Display.Width())
-			));
+			CHECK(std::equal(ExpectedValues.begin() + ExtendedW * y,
+							 ExpectedValues.begin() + ExtendedW * (y + 1),
+							 c.Display.PixelBuffer.begin() + (X2 + (Y2 + y) * c.Display.Width())));
 		}
 		CHECK(c.DisplayChanged);
 		CHECK_EQ(c.V[0xF], 0);
@@ -1310,6 +1333,7 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 		Handler_DRW_Vx_Vy_n(c);
 		Handler_DRW_Vx_Vy_n(c);
 
+		// clang-format off
 		constexpr std::array<std::uint8_t, ExtendedW * ExtendedH> ExpectedValues
 		{
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -1325,13 +1349,13 @@ TEST_CASE("Instruction: DRW Vx, Vy, n")
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		};
+		// clang-format on
 
 		for (std::size_t y = 0; y < ExtendedH; y++)
 		{
-			CHECK(std::equal(
-				ExpectedValues.begin() + ExtendedW * y, ExpectedValues.begin() + ExtendedW * (y + 1),
-				c.Display.PixelBuffer.begin() + (X2 + (Y2 + y) * c.Display.Width())
-			));
+			CHECK(std::equal(ExpectedValues.begin() + ExtendedW * y,
+							 ExpectedValues.begin() + ExtendedW * (y + 1),
+							 c.Display.PixelBuffer.begin() + (X2 + (Y2 + y) * c.Display.Width())));
 		}
 		CHECK(c.DisplayChanged);
 		CHECK_EQ(c.V[0xF], 1);
@@ -1542,7 +1566,7 @@ TEST_CASE("Instruction: LD B, Vx")
 	SUBCASE("Ones digit only")
 	{
 		c.V[1] = 1;
-		
+
 		Handler_LD_B_Vx(c);
 
 		CHECK_EQ(c.Memory[c.I + 0], 0);
@@ -1592,8 +1616,7 @@ TEST_CASE("Instruction: LD [I], Vx")
 
 	SUBCASE("Single register")
 	{
-		constexpr std::array<std::uint8_t, NumberOfRegisters> InputValues
-		{
+		constexpr std::array<std::uint8_t, NumberOfRegisters> InputValues{
 			0x10, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD,
 			0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD,
 		};
@@ -1602,8 +1625,7 @@ TEST_CASE("Instruction: LD [I], Vx")
 
 		Handler_LD_derefI_Vx(c);
 
-		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedValues
-		{
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedValues{
 			0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		};
@@ -1612,8 +1634,7 @@ TEST_CASE("Instruction: LD [I], Vx")
 
 	SUBCASE("Multiple registers")
 	{
-		constexpr std::array<std::uint8_t, NumberOfRegisters> InputValues
-		{
+		constexpr std::array<std::uint8_t, NumberOfRegisters> InputValues{
 			0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80,
 			0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD,
 		};
@@ -1622,8 +1643,7 @@ TEST_CASE("Instruction: LD [I], Vx")
 
 		Handler_LD_derefI_Vx(c);
 
-		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedValues
-		{
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedValues{
 			0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		};
@@ -1632,8 +1652,7 @@ TEST_CASE("Instruction: LD [I], Vx")
 
 	SUBCASE("All registers")
 	{
-		constexpr std::array<std::uint8_t, NumberOfRegisters> InputValues
-		{
+		constexpr std::array<std::uint8_t, NumberOfRegisters> InputValues{
 			0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80,
 			0x90, 0xA0, 0xB0, 0xC0, 0xD0, 0xE0, 0xF0, 0xFF,
 		};
@@ -1642,8 +1661,7 @@ TEST_CASE("Instruction: LD [I], Vx")
 
 		Handler_LD_derefI_Vx(c);
 
-		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedValues
-		{
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedValues{
 			0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80,
 			0x90, 0xA0, 0xB0, 0xC0, 0xD0, 0xE0, 0xF0, 0xFF,
 		};
@@ -1659,8 +1677,7 @@ TEST_CASE("Instruction: LD Vx, [I]")
 
 	SUBCASE("Single register")
 	{
-		constexpr std::array<std::uint8_t, NumberOfRegisters> InputValues
-		{
+		constexpr std::array<std::uint8_t, NumberOfRegisters> InputValues{
 			0x10, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD,
 			0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD,
 		};
@@ -1669,8 +1686,7 @@ TEST_CASE("Instruction: LD Vx, [I]")
 
 		Handler_LD_Vx_derefI(c);
 
-		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedValues
-		{
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedValues{
 			0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		};
@@ -1679,8 +1695,7 @@ TEST_CASE("Instruction: LD Vx, [I]")
 
 	SUBCASE("Multiple registers")
 	{
-		constexpr std::array<std::uint8_t, NumberOfRegisters> InputValues
-		{
+		constexpr std::array<std::uint8_t, NumberOfRegisters> InputValues{
 			0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80,
 			0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD,
 		};
@@ -1689,8 +1704,7 @@ TEST_CASE("Instruction: LD Vx, [I]")
 
 		Handler_LD_Vx_derefI(c);
 
-		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedValues
-		{
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedValues{
 			0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		};
@@ -1699,8 +1713,7 @@ TEST_CASE("Instruction: LD Vx, [I]")
 
 	SUBCASE("All registers")
 	{
-		constexpr std::array<std::uint8_t, NumberOfRegisters> InputValues
-		{
+		constexpr std::array<std::uint8_t, NumberOfRegisters> InputValues{
 			0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80,
 			0x90, 0xA0, 0xB0, 0xC0, 0xD0, 0xE0, 0xF0, 0xFF,
 		};
@@ -1709,8 +1722,7 @@ TEST_CASE("Instruction: LD Vx, [I]")
 
 		Handler_LD_Vx_derefI(c);
 
-		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedValues
-		{
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedValues{
 			0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80,
 			0x90, 0xA0, 0xB0, 0xC0, 0xD0, 0xE0, 0xF0, 0xFF,
 		};
@@ -1736,6 +1748,7 @@ TEST_CASE("Instruction: SCD n")
 		c.IR = 0x0120 | SpriteNumBytes;
 		c.I = 0x400;
 
+		// clang-format off
 		constexpr std::array<std::uint8_t, SpriteNumBytes> InputSprite
 		{
 			0b01110000,
@@ -1743,6 +1756,7 @@ TEST_CASE("Instruction: SCD n")
 			0b11001000,
 			0b01110000,
 		};
+		// clang-format on
 		std::copy(InputSprite.begin(), InputSprite.end(), c.Memory.begin() + c.I);
 		Handler_DRW_Vx_Vy_n(c);
 	}
@@ -1760,19 +1774,19 @@ TEST_CASE("Instruction: SCD n")
 	static constexpr std::size_t ExpectedY{ SpriteY - Padding };
 	using ExpectedArray = std::array<std::uint8_t, ExpectedW * ExpectedH>;
 
-	const auto checkDisplayPixelBuffer = [&c](const ExpectedArray& expectedValues)
-	{
+	const auto checkDisplayPixelBuffer = [&c](const ExpectedArray& expectedValues) {
 		for (std::size_t y = 0; y < ExpectedH; y++)
 		{
-			CHECK(std::equal(
-				expectedValues.begin() + ExpectedW * y, expectedValues.begin() + ExpectedW * (y + 1),
-				c.Display.PixelBuffer.begin() + (ExpectedX + (ExpectedY + y) * c.Display.Width())
-			));
+			CHECK(std::equal(expectedValues.begin() + ExpectedW * y,
+							 expectedValues.begin() + ExpectedW * (y + 1),
+							 c.Display.PixelBuffer.begin() +
+								 (ExpectedX + (ExpectedY + y) * c.Display.Width())));
 		}
 	};
 
 	SUBCASE("Verify setup is correct")
 	{
+		// clang-format off
 		constexpr ExpectedArray ExpectedValues
 		{
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -1790,6 +1804,7 @@ TEST_CASE("Instruction: SCD n")
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		};
+		// clang-format on
 		checkDisplayPixelBuffer(ExpectedValues);
 	}
 
@@ -1798,6 +1813,7 @@ TEST_CASE("Instruction: SCD n")
 		c.IR = 0x0000;
 		Handler_SCD_n(c);
 
+		// clang-format off
 		constexpr ExpectedArray ExpectedValues
 		{
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -1815,6 +1831,7 @@ TEST_CASE("Instruction: SCD n")
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		};
+		// clang-format on
 		checkDisplayPixelBuffer(ExpectedValues);
 		CHECK(c.DisplayChanged);
 	}
@@ -1824,6 +1841,7 @@ TEST_CASE("Instruction: SCD n")
 		c.IR = 0x0004;
 		Handler_SCD_n(c);
 
+		// clang-format off
 		constexpr ExpectedArray ExpectedValues
 		{
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -1841,6 +1859,7 @@ TEST_CASE("Instruction: SCD n")
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		};
+		// clang-format on
 		checkDisplayPixelBuffer(ExpectedValues);
 		CHECK(c.DisplayChanged);
 	}
@@ -1850,6 +1869,7 @@ TEST_CASE("Instruction: SCD n")
 		c.IR = 0x0008;
 		Handler_SCD_n(c);
 
+		// clang-format off
 		constexpr ExpectedArray ExpectedValues
 		{
 			0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
@@ -1867,6 +1887,7 @@ TEST_CASE("Instruction: SCD n")
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		};
+		// clang-format on
 		checkDisplayPixelBuffer(ExpectedValues);
 		CHECK(c.DisplayChanged);
 	}
@@ -1877,6 +1898,7 @@ TEST_CASE("Instruction: SCD n")
 		Handler_SCD_n(c);
 		Handler_SCD_n(c);
 
+		// clang-format off
 		constexpr ExpectedArray ExpectedValues
 		{
 			0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
@@ -1894,6 +1916,7 @@ TEST_CASE("Instruction: SCD n")
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		};
+		// clang-format on
 		checkDisplayPixelBuffer(ExpectedValues);
 		CHECK(c.DisplayChanged);
 	}
@@ -1903,6 +1926,7 @@ TEST_CASE("Instruction: SCD n")
 		c.IR = 0x000F;
 		Handler_SCD_n(c);
 
+		// clang-format off
 		constexpr ExpectedArray ExpectedValues
 		{
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -1920,6 +1944,7 @@ TEST_CASE("Instruction: SCD n")
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		};
+		// clang-format on
 		checkDisplayPixelBuffer(ExpectedValues);
 		CHECK(c.DisplayChanged);
 	}
@@ -1935,7 +1960,7 @@ TEST_CASE("Instruction: SCR")
 
 	SContext c{};
 	c.Display.ExtendedMode = true;
-	
+
 	// setup display pixel buffer by drawing a sprite
 	{
 		c.V[1] = SpriteX;
@@ -1943,6 +1968,7 @@ TEST_CASE("Instruction: SCR")
 		c.IR = 0x0120 | SpriteNumBytes;
 		c.I = 0x400;
 
+		// clang-format off
 		constexpr std::array<std::uint8_t, SpriteNumBytes> InputSprite
 		{
 			0b01110000,
@@ -1950,9 +1976,10 @@ TEST_CASE("Instruction: SCR")
 			0b11001000,
 			0b01110000,
 		};
+		// clang-format on
 		std::copy(InputSprite.begin(), InputSprite.end(), c.Memory.begin() + c.I);
 		Handler_DRW_Vx_Vy_n(c);
-	} 
+	}
 
 	c.V[1] = 0;
 	c.V[2] = 0;
@@ -1967,19 +1994,19 @@ TEST_CASE("Instruction: SCR")
 	static constexpr std::size_t ExpectedY{ SpriteY - Padding };
 	using ExpectedArray = std::array<std::uint8_t, ExpectedW * ExpectedH>;
 
-	const auto checkDisplayPixelBuffer = [&c](const ExpectedArray& expectedValues)
-	{
+	const auto checkDisplayPixelBuffer = [&c](const ExpectedArray& expectedValues) {
 		for (std::size_t y = 0; y < ExpectedH; y++)
 		{
-			CHECK(std::equal(
-				expectedValues.begin() + ExpectedW * y, expectedValues.begin() + ExpectedW * (y + 1),
-				c.Display.PixelBuffer.begin() + (ExpectedX + (ExpectedY + y) * c.Display.Width())
-			));
+			CHECK(std::equal(expectedValues.begin() + ExpectedW * y,
+							 expectedValues.begin() + ExpectedW * (y + 1),
+							 c.Display.PixelBuffer.begin() +
+								 (ExpectedX + (ExpectedY + y) * c.Display.Width())));
 		}
 	};
 
 	SUBCASE("Verify setup is correct")
 	{
+		// clang-format off
 		constexpr ExpectedArray ExpectedValues
 		{
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -1997,6 +2024,7 @@ TEST_CASE("Instruction: SCR")
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		};
+		// clang-format on
 		checkDisplayPixelBuffer(ExpectedValues);
 	}
 
@@ -2004,6 +2032,7 @@ TEST_CASE("Instruction: SCR")
 	{
 		Handler_SCR(c);
 
+		// clang-format off
 		constexpr ExpectedArray ExpectedValues
 		{
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -2021,6 +2050,7 @@ TEST_CASE("Instruction: SCR")
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		};
+		// clang-format on
 		checkDisplayPixelBuffer(ExpectedValues);
 		CHECK(c.DisplayChanged);
 	}
@@ -2030,6 +2060,7 @@ TEST_CASE("Instruction: SCR")
 		Handler_SCR(c);
 		Handler_SCR(c);
 
+		// clang-format off
 		constexpr ExpectedArray ExpectedValues
 		{
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -2047,6 +2078,7 @@ TEST_CASE("Instruction: SCR")
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		};
+		// clang-format on
 		checkDisplayPixelBuffer(ExpectedValues);
 		CHECK(c.DisplayChanged);
 	}
@@ -2057,6 +2089,7 @@ TEST_CASE("Instruction: SCR")
 		Handler_SCR(c);
 		Handler_SCR(c);
 
+		// clang-format off
 		constexpr ExpectedArray ExpectedValues
 		{
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -2074,6 +2107,7 @@ TEST_CASE("Instruction: SCR")
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		};
+		// clang-format on
 		checkDisplayPixelBuffer(ExpectedValues);
 		CHECK(c.DisplayChanged);
 	}
@@ -2097,6 +2131,7 @@ TEST_CASE("Instruction: SCL")
 		c.IR = 0x0120 | SpriteNumBytes;
 		c.I = 0x400;
 
+		// clang-format off
 		constexpr std::array<std::uint8_t, SpriteNumBytes> InputSprite
 		{
 			0b01110000,
@@ -2104,6 +2139,7 @@ TEST_CASE("Instruction: SCL")
 			0b11001000,
 			0b01110000,
 		};
+		// clang-format on
 		std::copy(InputSprite.begin(), InputSprite.end(), c.Memory.begin() + c.I);
 		Handler_DRW_Vx_Vy_n(c);
 	}
@@ -2121,19 +2157,19 @@ TEST_CASE("Instruction: SCL")
 	static constexpr std::size_t ExpectedY{ SpriteY - Padding };
 	using ExpectedArray = std::array<std::uint8_t, ExpectedW * ExpectedH>;
 
-	const auto checkDisplayPixelBuffer = [&c](const ExpectedArray& expectedValues)
-	{
+	const auto checkDisplayPixelBuffer = [&c](const ExpectedArray& expectedValues) {
 		for (std::size_t y = 0; y < ExpectedH; y++)
 		{
-			CHECK(std::equal(
-				expectedValues.begin() + ExpectedW * y, expectedValues.begin() + ExpectedW * (y + 1),
-				c.Display.PixelBuffer.begin() + (ExpectedX + (ExpectedY + y) * c.Display.Width())
-			));
+			CHECK(std::equal(expectedValues.begin() + ExpectedW * y,
+							 expectedValues.begin() + ExpectedW * (y + 1),
+							 c.Display.PixelBuffer.begin() +
+								 (ExpectedX + (ExpectedY + y) * c.Display.Width())));
 		}
 	};
 
 	SUBCASE("Verify setup is correct")
 	{
+		// clang-format off
 		constexpr ExpectedArray ExpectedValues
 		{
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -2151,6 +2187,7 @@ TEST_CASE("Instruction: SCL")
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		};
+		// clang-format on
 		checkDisplayPixelBuffer(ExpectedValues);
 	}
 
@@ -2158,6 +2195,7 @@ TEST_CASE("Instruction: SCL")
 	{
 		Handler_SCL(c);
 
+		// clang-format off
 		constexpr ExpectedArray ExpectedValues
 		{
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -2175,6 +2213,7 @@ TEST_CASE("Instruction: SCL")
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		};
+		// clang-format on
 		checkDisplayPixelBuffer(ExpectedValues);
 		CHECK(c.DisplayChanged);
 	}
@@ -2184,6 +2223,7 @@ TEST_CASE("Instruction: SCL")
 		Handler_SCL(c);
 		Handler_SCL(c);
 
+		// clang-format off
 		constexpr ExpectedArray ExpectedValues
 		{
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -2201,6 +2241,7 @@ TEST_CASE("Instruction: SCL")
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		};
+		// clang-format on
 		checkDisplayPixelBuffer(ExpectedValues);
 		CHECK(c.DisplayChanged);
 	}
@@ -2211,6 +2252,7 @@ TEST_CASE("Instruction: SCL")
 		Handler_SCL(c);
 		Handler_SCL(c);
 
+		// clang-format off
 		constexpr ExpectedArray ExpectedValues
 		{
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -2228,6 +2270,7 @@ TEST_CASE("Instruction: SCL")
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		};
+		// clang-format on
 		checkDisplayPixelBuffer(ExpectedValues);
 		CHECK(c.DisplayChanged);
 	}
@@ -2343,13 +2386,11 @@ TEST_CASE("Instruction: LD R, Vx")
 
 		Handler_LD_R_Vx(c);
 
-		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedV
-		{
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedV{
 			0x12, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		};
-		constexpr std::array<std::uint8_t, schip::NumberOfRPLFlags> ExpectedRPL
-		{
+		constexpr std::array<std::uint8_t, schip::NumberOfRPLFlags> ExpectedRPL{
 			0x12, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		};
 		CHECK(std::equal(c.V.begin(), c.V.end(), ExpectedV.begin()));
@@ -2366,13 +2407,11 @@ TEST_CASE("Instruction: LD R, Vx")
 
 		Handler_LD_R_Vx(c);
 
-		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedV
-		{
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedV{
 			0x12, 0x23, 0x34, 0x45, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		};
-		constexpr std::array<std::uint8_t, schip::NumberOfRPLFlags> ExpectedRPL
-		{
+		constexpr std::array<std::uint8_t, schip::NumberOfRPLFlags> ExpectedRPL{
 			0x12, 0x23, 0x34, 0x45, 0x00, 0x00, 0x00, 0x00,
 		};
 		CHECK(std::equal(c.V.begin(), c.V.end(), ExpectedV.begin()));
@@ -2393,13 +2432,11 @@ TEST_CASE("Instruction: LD R, Vx")
 
 		Handler_LD_R_Vx(c);
 
-		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedV
-		{
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedV{
 			0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		};
-		constexpr std::array<std::uint8_t, schip::NumberOfRPLFlags> ExpectedRPL
-		{
+		constexpr std::array<std::uint8_t, schip::NumberOfRPLFlags> ExpectedRPL{
 			0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89,
 		};
 		CHECK(std::equal(c.V.begin(), c.V.end(), ExpectedV.begin()));
@@ -2427,13 +2464,11 @@ TEST_CASE("Instruction: LD Vx, R")
 
 		Handler_LD_Vx_R(c);
 
-		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedV
-		{
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedV{
 			0x12, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		};
-		constexpr std::array<std::uint8_t, schip::NumberOfRPLFlags> ExpectedRPL
-		{
+		constexpr std::array<std::uint8_t, schip::NumberOfRPLFlags> ExpectedRPL{
 			0x12, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		};
 		CHECK(std::equal(c.V.begin(), c.V.end(), ExpectedV.begin()));
@@ -2450,13 +2485,11 @@ TEST_CASE("Instruction: LD Vx, R")
 
 		Handler_LD_Vx_R(c);
 
-		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedV
-		{
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedV{
 			0x12, 0x23, 0x34, 0x45, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		};
-		constexpr std::array<std::uint8_t, schip::NumberOfRPLFlags> ExpectedRPL
-		{
+		constexpr std::array<std::uint8_t, schip::NumberOfRPLFlags> ExpectedRPL{
 			0x12, 0x23, 0x34, 0x45, 0x00, 0x00, 0x00, 0x00,
 		};
 		CHECK(std::equal(c.V.begin(), c.V.end(), ExpectedV.begin()));
@@ -2477,13 +2510,11 @@ TEST_CASE("Instruction: LD Vx, R")
 
 		Handler_LD_Vx_R(c);
 
-		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedV
-		{
+		constexpr std::array<std::uint8_t, NumberOfRegisters> ExpectedV{
 			0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		};
-		constexpr std::array<std::uint8_t, schip::NumberOfRPLFlags> ExpectedRPL
-		{
+		constexpr std::array<std::uint8_t, schip::NumberOfRPLFlags> ExpectedRPL{
 			0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89,
 		};
 		CHECK(std::equal(c.V.begin(), c.V.end(), ExpectedV.begin()));

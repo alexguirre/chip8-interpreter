@@ -1,8 +1,8 @@
 #pragma once
 #include <array>
-#include <cstdlib>
-#include <cstdint>
 #include <chrono>
+#include <cstdint>
+#include <cstdlib>
 
 namespace c8::constants
 {
@@ -11,14 +11,13 @@ namespace c8::constants
 	constexpr std::size_t MemorySize{ 4096 };
 
 	constexpr std::uint16_t ProgramStartAddress{ 0x200 };
-	constexpr std::size_t InstructionByteSize{ 2 };	// Size of an instruction in bytes
+	constexpr std::size_t InstructionByteSize{ 2 }; // Size of an instruction in bytes
 
 	constexpr std::uint16_t FontsetAddress{ 0x0 };
 	constexpr std::size_t FontsetCharByteSize{ 5 };
 	constexpr std::size_t FontsetCharCount{ 16 };
 	constexpr std::size_t FontsetTotalByteSize{ FontsetCharCount * FontsetCharByteSize };
-	constexpr std::array<std::uint8_t, FontsetTotalByteSize> Fontset
-	{
+	constexpr std::array<std::uint8_t, FontsetTotalByteSize> Fontset{
 		0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
 		0x20, 0x60, 0x20, 0x20, 0x70, // 1
 		0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
@@ -37,10 +36,12 @@ namespace c8::constants
 		0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 	};
 
-	constexpr std::size_t CyclesHz{ 600 };	// Number of instructions executed per second
-	constexpr std::chrono::milliseconds CyclesRate{ static_cast<std::size_t>((1.0 / CyclesHz) * 1000.0 + 0.5) };
-	constexpr std::size_t TimersHz{ 60 };	// Number of times the timers are decreased per second
-	constexpr std::chrono::milliseconds TimersRate{ static_cast<std::size_t>((1.0 / TimersHz) * 1000.0 + 0.5) };
+	constexpr std::size_t CyclesHz{ 600 }; // Number of instructions executed per second
+	constexpr std::chrono::milliseconds CyclesRate{ static_cast<std::size_t>(
+		(1.0 / CyclesHz) * 1000.0 + 0.5) };
+	constexpr std::size_t TimersHz{ 60 }; // Number of times the timers are decreased per second
+	constexpr std::chrono::milliseconds TimersRate{ static_cast<std::size_t>(
+		(1.0 / TimersHz) * 1000.0 + 0.5) };
 
 	constexpr double BeepFrequency{ 550.0 };
 	constexpr std::chrono::milliseconds BeepDuration{ 50 };
@@ -55,12 +56,12 @@ namespace c8::constants
 	{
 		constexpr std::size_t NumberOfRPLFlags{ 8 };
 
-		constexpr std::uint16_t FontsetAddress{ constants::FontsetAddress + constants::FontsetTotalByteSize };
+		constexpr std::uint16_t FontsetAddress{ constants::FontsetAddress +
+												constants::FontsetTotalByteSize };
 		constexpr std::size_t FontsetCharByteSize{ 10 };
 		constexpr std::size_t FontsetCharCount{ 16 };
 		constexpr std::size_t FontsetTotalByteSize{ FontsetCharCount * FontsetCharByteSize };
-		constexpr std::array<std::uint8_t, FontsetTotalByteSize> Fontset
-		{
+		constexpr std::array<std::uint8_t, FontsetTotalByteSize> Fontset{
 			// 0
 			0b11111111,
 			0b11111111,

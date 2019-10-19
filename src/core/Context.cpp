@@ -4,10 +4,7 @@ namespace c8
 {
 	using namespace constants;
 
-	SDisplay::SDisplay()
-	{
-		Reset();
-	}
+	SDisplay::SDisplay() { Reset(); }
 
 	void SDisplay::Reset()
 	{
@@ -15,10 +12,7 @@ namespace c8
 		std::fill(PixelBuffer.begin(), PixelBuffer.end(), std::uint8_t(0));
 	}
 
-	SContext::SContext()
-	{
-		Reset();
-	}
+	SContext::SContext() { Reset(); }
 
 	void SContext::Reset()
 	{
@@ -37,6 +31,8 @@ namespace c8
 		Exited = false;
 
 		std::copy(Fontset.begin(), Fontset.end(), Memory.begin() + FontsetAddress);
-		std::copy(schip::Fontset.begin(), schip::Fontset.end(), Memory.begin() + schip::FontsetAddress);
+		std::copy(schip::Fontset.begin(),
+				  schip::Fontset.end(),
+				  Memory.begin() + schip::FontsetAddress);
 	}
 }
