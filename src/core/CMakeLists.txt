@@ -9,6 +9,7 @@ set(CORE_SOURCES
     "Interpreter.cpp"
     "Interpreter.h"
     "Platform.h"
+    "TypeAliases.h"
 )
 
 add_library(c8-core STATIC

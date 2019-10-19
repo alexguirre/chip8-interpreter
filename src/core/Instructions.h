@@ -1,4 +1,5 @@
 #pragma once
+#include "TypeAliases.h"
 #include <cstdint>
 #include <functional>
 #include <string>
@@ -21,5 +22,8 @@ namespace c8
 		FInstructionToString ToString;
 
 		static const std::vector<SInstruction> InstructionSet;
+
+		static const SInstruction& FindInstruction(std::uint16_t opcode);
+		static optional_cref<SInstruction> TryFindInstruction(std::uint16_t opcode);
 	};
 }

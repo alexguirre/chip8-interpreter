@@ -564,6 +564,34 @@ namespace c8
 		{ "LD",		Handler_LD_Vx_R,		0xF085,	0xF0FF,	std::bind(ToString_NAME_Vx_src, _1, _2, "R")	},
 	};
 	// clang-format on
+
+	const SInstruction& SInstruction::FindInstruction(std::uint16_t opcode)
+	{
+		auto inst = TryFindInstruction(opcode);
+
+		if (!inst.has_value())
+		{
+			// not found, throw error
+			char hexBuffer[8];
+			std::snprintf(hexBuffer, std::size(hexBuffer), "%04X", opcode);
+			throw std::runtime_error("Unsupported instruction '" + std::string(hexBuffer) + "'");
+		}
+
+		return inst.value();
+	}
+
+	optional_cref<SInstruction> SInstruction::TryFindInstruction(std::uint16_t opcode)
+	{
+		for (auto& inst : InstructionSet)
+		{
+			if ((opcode & inst.OpcodeMask) == inst.Opcode)
+			{
+				return std::cref(inst);
+			}
+		}
+
+		return std::nullopt;
+	}
 }
 
 TEST_CASE("Instruction ToString")

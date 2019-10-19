@@ -375,7 +375,7 @@ void CInterpreterDebugger::DrawDisassembly()
 					contextCopy.PC = gsl::narrow<std::uint16_t>(addr);
 					contextCopy.IR = opcode;
 
-					auto instOpt = mInterpreter.TryFindInstruction(opcode);
+					auto instOpt = SInstruction::TryFindInstruction(opcode);
 					if (instOpt.has_value())
 					{
 						const SInstruction& inst = instOpt.value().get();

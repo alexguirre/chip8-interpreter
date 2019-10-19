@@ -68,7 +68,7 @@ namespace c8
 		c.PC += InstructionByteSize;
 
 		// execute
-		const SInstruction& instr = FindInstruction(opcode);
+		const SInstruction& instr = SInstruction::FindInstruction(opcode);
 		instr.Handler(c);
 
 		// update display
@@ -184,34 +184,5 @@ namespace c8
 		file.write(c.Display.PixelBuffer.data(),
 				   c.Display.PixelBuffer.size() * sizeof(std::uint8_t));
 		file.write(reinterpret_cast<const std::uint8_t*>(&c.Exited), sizeof(c.Exited));
-	}
-
-	const SInstruction& CInterpreter::FindInstruction(std::uint16_t opcode) const
-	{
-		auto inst = TryFindInstruction(opcode);
-
-		if (!inst.has_value())
-		{
-			// not found, throw error
-			char hexBuffer[8];
-			std::snprintf(hexBuffer, std::size(hexBuffer), "%04X", opcode);
-			throw std::runtime_error("Unsupported instruction '" + std::string(hexBuffer) + "'");
-		}
-
-		return inst.value();
-	}
-
-	std::optional<std::reference_wrapper<const SInstruction>>
-	CInterpreter::TryFindInstruction(std::uint16_t opcode) const
-	{
-		for (auto& inst : SInstruction::InstructionSet)
-		{
-			if ((opcode & inst.OpcodeMask) == inst.Opcode)
-			{
-				return std::cref(inst);
-			}
-		}
-
-		return std::nullopt;
 	}
 }
