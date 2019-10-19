@@ -1,11 +1,10 @@
 #include "Sound.h"
-#include <stdexcept>
 #include <cmath>
+#include <stdexcept>
 
 // based on https://stackoverflow.com/a/10111570
 
-CSound::CSound()
-	: mV{}
+CSound::CSound() : mV{}
 {
 	SDL_AudioSpec desiredSpec;
 	desiredSpec.freq = Frequency;
@@ -17,9 +16,7 @@ CSound::CSound()
 
 	SDL_AudioSpec obtainedSpec;
 
-	mDeviceID = SDL_OpenAudioDevice(
-		nullptr, false, &desiredSpec, &obtainedSpec, 0
-	);
+	mDeviceID = SDL_OpenAudioDevice(nullptr, false, &desiredSpec, &obtainedSpec, 0);
 
 	if (!mDeviceID)
 	{
@@ -56,8 +53,9 @@ void CSound::GenerateSamples(gsl::span<std::int16_t> stream)
 		}
 
 		SBeep& b = mBeeps.front();
-		
-		std::uint32_t samplesToDo = static_cast<std::uint32_t>(std::min(i + b.SamplesLeft, stream.size()));
+
+		std::uint32_t samplesToDo =
+			static_cast<std::uint32_t>(std::min(i + b.SamplesLeft, stream.size()));
 		b.SamplesLeft -= samplesToDo - static_cast<std::uint32_t>(i);
 
 		while (i < samplesToDo)
@@ -78,7 +76,5 @@ void CSound::GenerateSamples(gsl::span<std::int16_t> stream)
 
 void CSound::SdlCallback(CSound* self, std::uint8_t* stream, std::int32_t len)
 {
-	self->GenerateSamples(
-		{ reinterpret_cast<std::int16_t*>(stream), len / 2 }
-	);
+	self->GenerateSamples({ reinterpret_cast<std::int16_t*>(stream), len / 2 });
 }

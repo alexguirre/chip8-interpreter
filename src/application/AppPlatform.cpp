@@ -1,8 +1,9 @@
 #include "AppPlatform.h"
 
 CAppPlatform::CAppPlatform()
-	: mDisplay{ std::make_unique<CDisplay>() }, mKeyboard{ std::make_unique<CKeyboard>() },
-	mSound{ std::make_unique<CSound>() }
+	: mDisplay{ std::make_unique<CDisplay>() },
+	  mKeyboard{ std::make_unique<CKeyboard>() },
+	  mSound{ std::make_unique<CSound>() }
 {
 }
 

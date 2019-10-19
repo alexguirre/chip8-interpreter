@@ -1,11 +1,8 @@
 #include "Keyboard.h"
-#include <stdexcept>
 #include <core/Constants.h>
+#include <stdexcept>
 
-CKeyboard::CKeyboard()
-	: mState{SDL_GetKeyboardState(nullptr)}
-{
-}
+CKeyboard::CKeyboard() : mState{ SDL_GetKeyboardState(nullptr) } {}
 
 bool CKeyboard::IsDown(std::uint8_t key) const
 {

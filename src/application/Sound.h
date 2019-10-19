@@ -1,10 +1,10 @@
 #pragma once
-#include <cstdint>
-#include <queue>
-#include <chrono>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_audio.h>
+#include <chrono>
+#include <cstdint>
 #include <gsl/span>
+#include <queue>
 
 class CSound
 {

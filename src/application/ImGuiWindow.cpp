@@ -1,23 +1,23 @@
 #include "ImGuiWindow.h"
-#include <stdexcept>
-#include <mutex>
-#include <functional>
-#include <array>
-#include <SDL2/SDL_syswm.h>
-#include <gsl/gsl_util>
-#include <GL/gl3w.h>
-#include <imgui.h>
-#include "Resources.h"
 #include "Icons.h"
+#include "Resources.h"
+#include <GL/gl3w.h>
+#include <SDL2/SDL_syswm.h>
+#include <array>
+#include <functional>
+#include <gsl/gsl_util>
+#include <imgui.h>
+#include <mutex>
+#include <stdexcept>
 
 // TODO: clean up CImGuiWindow to make coding conventions similar to the rest of the project
 // For now, mostly copied from ImGui's SDL2+OpenGL3 example
 
 // Desktop GL has glDrawElementsBaseVertex() which GL ES and WebGL don't have.
 #if defined(IMGUI_IMPL_OPENGL_ES2) || defined(IMGUI_IMPL_OPENGL_ES3)
-#define IMGUI_IMPL_OPENGL_HAS_DRAW_WITH_BASE_VERTEX     0
+#define IMGUI_IMPL_OPENGL_HAS_DRAW_WITH_BASE_VERTEX 0
 #else
-#define IMGUI_IMPL_OPENGL_HAS_DRAW_WITH_BASE_VERTEX     1
+#define IMGUI_IMPL_OPENGL_HAS_DRAW_WITH_BASE_VERTEX 1
 #endif
 
 class CImGuiWindow::Impl
@@ -50,12 +50,12 @@ public:
 		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 		SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
-		Window = SDL_CreateWindow(
-			title.c_str(),
-			SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-			1280, 720,
-			SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
-		);
+		Window = SDL_CreateWindow(title.c_str(),
+								  SDL_WINDOWPOS_UNDEFINED,
+								  SDL_WINDOWPOS_UNDEFINED,
+								  1280,
+								  720,
+								  SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 
 		if (!Window)
 		{
@@ -67,13 +67,12 @@ public:
 		SDL_GL_SetSwapInterval(1);
 
 		static std::once_flag onceGl3wInit;
-		std::call_once(onceGl3wInit, []()
+		std::call_once(onceGl3wInit, []() {
+			if (gl3wInit() != GL3W_OK)
 			{
-				if (gl3wInit() != GL3W_OK)
-				{
-					throw std::runtime_error("Failed to initialize gl3w");
-				}
-			});
+				throw std::runtime_error("Failed to initialize gl3w");
+			}
+		});
 
 		IMGUI_CHECKVERSION();
 		ImContext = ImGui::CreateContext();
@@ -86,7 +85,12 @@ public:
 		iconFontConfig.GlyphMinAdvanceX = 13.0f;
 		iconFontConfig.PixelSnapH = true;
 		static const ImWchar iconFontRange[]{ ICON_MIN_FA, ICON_MAX_FA, 0 };
-		io.Fonts->AddFontFromMemoryCompressedTTF(CResources::FontAwesomeCompressedTTF.data(), static_cast<int>(CResources::FontAwesomeCompressedTTF.size()), 13.0f, &iconFontConfig, iconFontRange);
+		io.Fonts->AddFontFromMemoryCompressedTTF(
+			CResources::FontAwesomeCompressedTTF.data(),
+			static_cast<int>(CResources::FontAwesomeCompressedTTF.size()),
+			13.0f,
+			&iconFontConfig,
+			iconFontRange);
 
 		InitSdl();
 		InitOpenGL();
@@ -121,17 +125,32 @@ public:
 		{
 		case SDL_MOUSEWHEEL:
 		{
-			if (event.wheel.x > 0) { io.MouseWheelH += 1; }
-			if (event.wheel.x < 0) { io.MouseWheelH -= 1; }
-			if (event.wheel.y > 0) { io.MouseWheel += 1; }
-			if (event.wheel.y < 0) { io.MouseWheel -= 1; }
+			if (event.wheel.x > 0)
+			{
+				io.MouseWheelH += 1;
+			}
+			if (event.wheel.x < 0)
+			{
+				io.MouseWheelH -= 1;
+			}
+			if (event.wheel.y > 0)
+			{
+				io.MouseWheel += 1;
+			}
+			if (event.wheel.y < 0)
+			{
+				io.MouseWheel -= 1;
+			}
 			return true;
 		}
 		case SDL_MOUSEBUTTONDOWN:
 		{
-			if (event.button.button == SDL_BUTTON_LEFT) MousePressed[0] = true;
-			if (event.button.button == SDL_BUTTON_RIGHT) MousePressed[1] = true;
-			if (event.button.button == SDL_BUTTON_MIDDLE) MousePressed[2] = true;
+			if (event.button.button == SDL_BUTTON_LEFT)
+				MousePressed[0] = true;
+			if (event.button.button == SDL_BUTTON_RIGHT)
+				MousePressed[1] = true;
+			if (event.button.button == SDL_BUTTON_MIDDLE)
+				MousePressed[2] = true;
 			return true;
 		}
 		case SDL_TEXTINPUT:
@@ -176,7 +195,10 @@ public:
 
 		// render
 		ImGui::Render();
-		glViewport(0, 0, static_cast<GLsizei>(io.DisplaySize.x), static_cast<GLsizei>(io.DisplaySize.y));
+		glViewport(0,
+				   0,
+				   static_cast<GLsizei>(io.DisplaySize.x),
+				   static_cast<GLsizei>(io.DisplaySize.y));
 		glClearColor(0.45f, 0.55f, 0.60f, 1.00f);
 		glClear(GL_COLOR_BUFFER_BIT);
 		RenderDrawData(ImGui::GetDrawData());
@@ -221,17 +243,18 @@ private:
 		io.ClipboardUserData = NULL;
 
 		static std::once_flag onceCreateCursors;
-		std::call_once(onceCreateCursors, []()
-			{
-				Cursors[ImGuiMouseCursor_Arrow] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
-				Cursors[ImGuiMouseCursor_TextInput] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
-				Cursors[ImGuiMouseCursor_ResizeAll] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
-				Cursors[ImGuiMouseCursor_ResizeNS] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
-				Cursors[ImGuiMouseCursor_ResizeEW] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
-				Cursors[ImGuiMouseCursor_ResizeNESW] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW);
-				Cursors[ImGuiMouseCursor_ResizeNWSE] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE);
-				Cursors[ImGuiMouseCursor_Hand] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
-			});
+		std::call_once(onceCreateCursors, []() {
+			Cursors[ImGuiMouseCursor_Arrow] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+			Cursors[ImGuiMouseCursor_TextInput] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
+			Cursors[ImGuiMouseCursor_ResizeAll] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
+			Cursors[ImGuiMouseCursor_ResizeNS] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
+			Cursors[ImGuiMouseCursor_ResizeEW] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
+			Cursors[ImGuiMouseCursor_ResizeNESW] =
+				SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW);
+			Cursors[ImGuiMouseCursor_ResizeNWSE] =
+				SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE);
+			Cursors[ImGuiMouseCursor_Hand] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+		});
 
 #ifdef _WIN32
 		SDL_SysWMinfo wmInfo;
@@ -248,7 +271,9 @@ private:
 		ImGuiIO& io = ImGui::GetIO();
 		io.BackendRendererName = "OpenGL3";
 #if IMGUI_IMPL_OPENGL_HAS_DRAW_WITH_BASE_VERTEX
-		io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;  // We can honor the ImDrawCmd::VtxOffset field, allowing for large meshes.
+		io.BackendFlags |=
+			ImGuiBackendFlags_RendererHasVtxOffset; // We can honor the ImDrawCmd::VtxOffset field,
+													// allowing for large meshes.
 #endif
 	}
 
@@ -260,11 +285,14 @@ private:
 
 		if (io.WantSetMousePos)
 		{
-			SDL_WarpMouseInWindow(Window, static_cast<int>(io.MousePos.x), static_cast<int>(io.MousePos.y));
+			SDL_WarpMouseInWindow(Window,
+								  static_cast<int>(io.MousePos.x),
+								  static_cast<int>(io.MousePos.y));
 		}
 		else
 		{
-			io.MousePos = ImVec2(-std::numeric_limits<float>::max(), -std::numeric_limits<float>::max());
+			io.MousePos =
+				ImVec2(-std::numeric_limits<float>::max(), -std::numeric_limits<float>::max());
 		}
 
 		std::int32_t mouseX, mouseY;
@@ -274,12 +302,14 @@ private:
 		io.MouseDown[2] = MousePressed[2] || (mouseButtons & SDL_BUTTON(SDL_BUTTON_MIDDLE)) != 0;
 		std::fill(MousePressed.begin(), MousePressed.end(), false);
 
-#if SDL_HAS_CAPTURE_AND_GLOBAL_MOUSE && !defined(__EMSCRIPTEN__) && !defined(__ANDROID__) && !(defined(__APPLE__) && TARGET_OS_IOS)
+#if SDL_HAS_CAPTURE_AND_GLOBAL_MOUSE && !defined(__EMSCRIPTEN__) && !defined(__ANDROID__) && \
+	!(defined(__APPLE__) && TARGET_OS_IOS)
 		SDL_Window* focused_window = SDL_GetKeyboardFocus();
 		if (g_Window == focused_window)
 		{
-			// SDL_GetMouseState() gives mouse position seemingly based on the last window entered/focused(?)
-			// The creation of a new windows at runtime and SDL_CaptureMouse both seems to severely mess up with that, so we retrieve that position globally.
+			// SDL_GetMouseState() gives mouse position seemingly based on the last window
+			// entered/focused(?) The creation of a new windows at runtime and SDL_CaptureMouse both
+			// seems to severely mess up with that, so we retrieve that position globally.
 			std::int32_t winX, winY;
 			SDL_GetWindowPosition(focused_window, &winX, &winY);
 			SDL_GetGlobalMouseState(&mouseX, &mouseY);
@@ -288,8 +318,9 @@ private:
 			io.MousePos = ImVec2(static_cast<float>(mouseX), static_cast<float>(mouseY));
 		}
 
-		// SDL_CaptureMouse() let the OS know e.g. that our imgui drag outside the SDL window boundaries shouldn't e.g. trigger the OS window resize cursor.
-		// The function is only supported from SDL 2.0.4 (released Jan 2016)
+		// SDL_CaptureMouse() let the OS know e.g. that our imgui drag outside the SDL window
+		// boundaries shouldn't e.g. trigger the OS window resize cursor. The function is only
+		// supported from SDL 2.0.4 (released Jan 2016)
 		bool anyMouseButtonDown = ImGui::IsAnyMouseDown();
 		SDL_CaptureMouse(anyMouseButtonDown ? SDL_TRUE : SDL_FALSE);
 #else
@@ -324,7 +355,9 @@ private:
 		ImGui::SetCurrentContext(ImContext);
 
 		ImGuiIO& io = ImGui::GetIO();
-		IM_ASSERT(io.Fonts->IsBuilt() && "Font atlas not built! It is generally built by the renderer back-end. Missing call to renderer _NewFrame() function? e.g. ImGui_ImplOpenGL3_NewFrame().");
+		IM_ASSERT(io.Fonts->IsBuilt() &&
+				  "Font atlas not built! It is generally built by the renderer back-end. Missing "
+				  "call to renderer _NewFrame() function? e.g. ImGui_ImplOpenGL3_NewFrame().");
 
 		std::int32_t w, h, displayW, displayH;
 		SDL_GetWindowSize(Window, &w, &h);
@@ -332,15 +365,17 @@ private:
 		io.DisplaySize = ImVec2(static_cast<float>(w), static_cast<float>(h));
 		if (w > 0 && h > 0)
 		{
-			io.DisplayFramebufferScale = ImVec2(static_cast<float>(displayW) / w, static_cast<float>(displayH) / h);
+			io.DisplayFramebufferScale =
+				ImVec2(static_cast<float>(displayW) / w, static_cast<float>(displayH) / h);
 		}
 
 		static std::uint64_t frequency = SDL_GetPerformanceFrequency();
 		static std::uint64_t prevTime = 0;
 		std::uint64_t currentTime = SDL_GetPerformanceCounter();
-		io.DeltaTime = prevTime > 0 ?
-			static_cast<float>(static_cast<double>(currentTime - prevTime) / frequency) :
-			(1.0f / 60.0f);
+		io.DeltaTime =
+			prevTime > 0 ?
+				static_cast<float>(static_cast<double>(currentTime - prevTime) / frequency) :
+				(1.0f / 60.0f);
 		prevTime = currentTime;
 
 		UpdateMousePosAndButtons();
@@ -448,7 +483,15 @@ private:
 #ifdef GL_UNPACK_ROW_LENGTH
 		glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 #endif
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+		glTexImage2D(GL_TEXTURE_2D,
+					 0,
+					 GL_RGBA,
+					 width,
+					 height,
+					 0,
+					 GL_RGBA,
+					 GL_UNSIGNED_BYTE,
+					 pixels);
 
 		io.Fonts->TexID = reinterpret_cast<ImTextureID>(static_cast<std::uintptr_t>(FontTexture));
 
@@ -457,16 +500,42 @@ private:
 
 	void DestroyDeviceObjects()
 	{
-		if (VboHandle) { glDeleteBuffers(1, &VboHandle); VboHandle = 0; }
-		if (ElementsHandle) { glDeleteBuffers(1, &ElementsHandle); ElementsHandle = 0; }
+		if (VboHandle)
+		{
+			glDeleteBuffers(1, &VboHandle);
+			VboHandle = 0;
+		}
+		if (ElementsHandle)
+		{
+			glDeleteBuffers(1, &ElementsHandle);
+			ElementsHandle = 0;
+		}
 
-		if (ShaderHandle && VertexShaderHandle) { glDetachShader(ShaderHandle, VertexShaderHandle); }
-		if (VertexShaderHandle) { glDeleteShader(VertexShaderHandle); VertexShaderHandle = 0; }
+		if (ShaderHandle && VertexShaderHandle)
+		{
+			glDetachShader(ShaderHandle, VertexShaderHandle);
+		}
+		if (VertexShaderHandle)
+		{
+			glDeleteShader(VertexShaderHandle);
+			VertexShaderHandle = 0;
+		}
 
-		if (ShaderHandle && FragmentShaderHandle) { glDetachShader(ShaderHandle, FragmentShaderHandle); }
-		if (FragmentShaderHandle) { glDeleteShader(FragmentShaderHandle); FragmentShaderHandle = 0; }
+		if (ShaderHandle && FragmentShaderHandle)
+		{
+			glDetachShader(ShaderHandle, FragmentShaderHandle);
+		}
+		if (FragmentShaderHandle)
+		{
+			glDeleteShader(FragmentShaderHandle);
+			FragmentShaderHandle = 0;
+		}
 
-		if (ShaderHandle) { glDeleteProgram(ShaderHandle); ShaderHandle = 0; }
+		if (ShaderHandle)
+		{
+			glDeleteProgram(ShaderHandle);
+			ShaderHandle = 0;
+		}
 
 		DestroyFontsTexture();
 	}
@@ -484,11 +553,15 @@ private:
 		}
 	}
 
-	void SetupRenderState(ImDrawData* drawData, std::int32_t fbWidth, std::int32_t fbHeight, std::uint32_t vertexArrayObject)
+	void SetupRenderState(ImDrawData* drawData,
+						  std::int32_t fbWidth,
+						  std::int32_t fbHeight,
+						  std::uint32_t vertexArrayObject)
 	{
 		ImGui::SetCurrentContext(ImContext);
 
-		// Setup render state: alpha-blending enabled, no face culling, no depth testing, scissor enabled, polygon fill
+		// Setup render state: alpha-blending enabled, no face culling, no depth testing, scissor
+		// enabled, polygon fill
 		glEnable(GL_BLEND);
 		glBlendEquation(GL_FUNC_ADD);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -500,24 +573,26 @@ private:
 #endif
 
 		// Setup viewport, orthographic projection matrix
-		// Our visible imgui space lies from draw_data->DisplayPos (top left) to draw_data->DisplayPos+data_data->DisplaySize (bottom right). DisplayPos is (0,0) for single viewport apps.
+		// Our visible imgui space lies from draw_data->DisplayPos (top left) to
+		// draw_data->DisplayPos+data_data->DisplaySize (bottom right). DisplayPos is (0,0) for
+		// single viewport apps.
 		glViewport(0, 0, (GLsizei)fbWidth, (GLsizei)fbHeight);
 		float L = drawData->DisplayPos.x;
 		float R = drawData->DisplayPos.x + drawData->DisplaySize.x;
 		float T = drawData->DisplayPos.y;
 		float B = drawData->DisplayPos.y + drawData->DisplaySize.y;
-		const float orthoProjection[4][4] =
-		{
-			{ 2.0f / (R - L),		0.0f,				0.0f,	0.0f },
-			{ 0.0f,					2.0f / (T - B),		0.0f,	0.0f },
-			{ 0.0f,					0.0f,				-1.0f,	0.0f },
-			{ (R + L) / (L - R),	(T + B) / (B - T),	0.0f,	1.0f },
+		const float orthoProjection[4][4] = {
+			{ 2.0f / (R - L), 0.0f, 0.0f, 0.0f },
+			{ 0.0f, 2.0f / (T - B), 0.0f, 0.0f },
+			{ 0.0f, 0.0f, -1.0f, 0.0f },
+			{ (R + L) / (L - R), (T + B) / (B - T), 0.0f, 1.0f },
 		};
 		glUseProgram(ShaderHandle);
 		glUniform1i(AttribLocationTex, 0);
 		glUniformMatrix4fv(AttribLocationProjMtx, 1, GL_FALSE, &orthoProjection[0][0]);
 #ifdef GL_SAMPLER_BINDING
-		glBindSampler(0, 0); // We use combined texture/sampler state. Applications using GL 3.3 may set that otherwise.
+		glBindSampler(0, 0); // We use combined texture/sampler state. Applications using GL 3.3 may
+							 // set that otherwise.
 #endif
 
 		(void)vertexArrayObject;
@@ -531,58 +606,96 @@ private:
 		glEnableVertexAttribArray(AttribLocationVtxPos);
 		glEnableVertexAttribArray(AttribLocationVtxUV);
 		glEnableVertexAttribArray(AttribLocationVtxColor);
-		glVertexAttribPointer(AttribLocationVtxPos, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), reinterpret_cast<GLvoid*>(IM_OFFSETOF(ImDrawVert, pos)));
-		glVertexAttribPointer(AttribLocationVtxUV, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), reinterpret_cast<GLvoid*>(IM_OFFSETOF(ImDrawVert, uv)));
-		glVertexAttribPointer(AttribLocationVtxColor, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ImDrawVert), reinterpret_cast<GLvoid*>(IM_OFFSETOF(ImDrawVert, col)));
+		glVertexAttribPointer(AttribLocationVtxPos,
+							  2,
+							  GL_FLOAT,
+							  GL_FALSE,
+							  sizeof(ImDrawVert),
+							  reinterpret_cast<GLvoid*>(IM_OFFSETOF(ImDrawVert, pos)));
+		glVertexAttribPointer(AttribLocationVtxUV,
+							  2,
+							  GL_FLOAT,
+							  GL_FALSE,
+							  sizeof(ImDrawVert),
+							  reinterpret_cast<GLvoid*>(IM_OFFSETOF(ImDrawVert, uv)));
+		glVertexAttribPointer(AttribLocationVtxColor,
+							  4,
+							  GL_UNSIGNED_BYTE,
+							  GL_TRUE,
+							  sizeof(ImDrawVert),
+							  reinterpret_cast<GLvoid*>(IM_OFFSETOF(ImDrawVert, col)));
 	}
 
 	void RenderDrawData(ImDrawData* drawData)
 	{
 		ImGui::SetCurrentContext(ImContext);
 
-		// Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
-		std::int32_t fbWidth = static_cast<std::int32_t>(drawData->DisplaySize.x * drawData->FramebufferScale.x);
-		std::int32_t fbHeight = static_cast<std::int32_t>(drawData->DisplaySize.y * drawData->FramebufferScale.y);
+		// Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates
+		// != framebuffer coordinates)
+		std::int32_t fbWidth =
+			static_cast<std::int32_t>(drawData->DisplaySize.x * drawData->FramebufferScale.x);
+		std::int32_t fbHeight =
+			static_cast<std::int32_t>(drawData->DisplaySize.y * drawData->FramebufferScale.y);
 		if (fbWidth <= 0 || fbHeight <= 0)
 			return;
 
 		// Backup GL state
-		GLenum lastActiveTexture; glGetIntegerv(GL_ACTIVE_TEXTURE, reinterpret_cast<GLint*>(&lastActiveTexture));
+		GLenum lastActiveTexture;
+		glGetIntegerv(GL_ACTIVE_TEXTURE, reinterpret_cast<GLint*>(&lastActiveTexture));
 		glActiveTexture(GL_TEXTURE0);
-		GLint lastProgram; glGetIntegerv(GL_CURRENT_PROGRAM, &lastProgram);
-		GLint lastTexture; glGetIntegerv(GL_TEXTURE_BINDING_2D, &lastTexture);
+		GLint lastProgram;
+		glGetIntegerv(GL_CURRENT_PROGRAM, &lastProgram);
+		GLint lastTexture;
+		glGetIntegerv(GL_TEXTURE_BINDING_2D, &lastTexture);
 #ifdef GL_SAMPLER_BINDING
-		GLint lastSampler; glGetIntegerv(GL_SAMPLER_BINDING, &lastSampler);
+		GLint lastSampler;
+		glGetIntegerv(GL_SAMPLER_BINDING, &lastSampler);
 #endif
-		GLint lastArrayBuffer; glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &lastArrayBuffer);
+		GLint lastArrayBuffer;
+		glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &lastArrayBuffer);
 #ifndef IMGUI_IMPL_OPENGL_ES2
-		GLint lastVertexArrayObject; glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &lastVertexArrayObject);
+		GLint lastVertexArrayObject;
+		glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &lastVertexArrayObject);
 #endif
 #ifdef GL_POLYGON_MODE
-		GLint lastPolygonMode[2]; glGetIntegerv(GL_POLYGON_MODE, lastPolygonMode);
+		GLint lastPolygonMode[2];
+		glGetIntegerv(GL_POLYGON_MODE, lastPolygonMode);
 #endif
-		GLint lastViewport[4]; glGetIntegerv(GL_VIEWPORT, lastViewport);
-		GLint lastScissorBox[4]; glGetIntegerv(GL_SCISSOR_BOX, lastScissorBox);
-		GLenum lastBlendSrcRgb; glGetIntegerv(GL_BLEND_SRC_RGB, reinterpret_cast<GLint*>(&lastBlendSrcRgb));
-		GLenum lastBlendDstRgb; glGetIntegerv(GL_BLEND_DST_RGB, reinterpret_cast<GLint*>(&lastBlendDstRgb));
-		GLenum lastBlendSrcAlpha; glGetIntegerv(GL_BLEND_SRC_ALPHA, reinterpret_cast<GLint*>(&lastBlendSrcAlpha));
-		GLenum lastBlendDstAlpha; glGetIntegerv(GL_BLEND_DST_ALPHA, reinterpret_cast<GLint*>(&lastBlendDstAlpha));
-		GLenum lastBlendEquationRgb; glGetIntegerv(GL_BLEND_EQUATION_RGB, reinterpret_cast<GLint*>(&lastBlendEquationRgb));
-		GLenum lastBlendEquationAlpha; glGetIntegerv(GL_BLEND_EQUATION_ALPHA, reinterpret_cast<GLint*>(&lastBlendEquationAlpha));
+		GLint lastViewport[4];
+		glGetIntegerv(GL_VIEWPORT, lastViewport);
+		GLint lastScissorBox[4];
+		glGetIntegerv(GL_SCISSOR_BOX, lastScissorBox);
+		GLenum lastBlendSrcRgb;
+		glGetIntegerv(GL_BLEND_SRC_RGB, reinterpret_cast<GLint*>(&lastBlendSrcRgb));
+		GLenum lastBlendDstRgb;
+		glGetIntegerv(GL_BLEND_DST_RGB, reinterpret_cast<GLint*>(&lastBlendDstRgb));
+		GLenum lastBlendSrcAlpha;
+		glGetIntegerv(GL_BLEND_SRC_ALPHA, reinterpret_cast<GLint*>(&lastBlendSrcAlpha));
+		GLenum lastBlendDstAlpha;
+		glGetIntegerv(GL_BLEND_DST_ALPHA, reinterpret_cast<GLint*>(&lastBlendDstAlpha));
+		GLenum lastBlendEquationRgb;
+		glGetIntegerv(GL_BLEND_EQUATION_RGB, reinterpret_cast<GLint*>(&lastBlendEquationRgb));
+		GLenum lastBlendEquationAlpha;
+		glGetIntegerv(GL_BLEND_EQUATION_ALPHA, reinterpret_cast<GLint*>(&lastBlendEquationAlpha));
 		GLboolean lastEnableBlend = glIsEnabled(GL_BLEND);
 		GLboolean lastEnableCullFace = glIsEnabled(GL_CULL_FACE);
 		GLboolean lastEnableDepthTest = glIsEnabled(GL_DEPTH_TEST);
 		GLboolean lastEnableScissorTest = glIsEnabled(GL_SCISSOR_TEST);
 		bool clipOriginLowerLeft = true;
 #if defined(GL_CLIP_ORIGIN) && !defined(__APPLE__)
-		GLenum lastClipOrigin = 0; glGetIntegerv(GL_CLIP_ORIGIN, reinterpret_cast<GLint*>(&lastClipOrigin)); // Support for GL 4.5's glClipControl(GL_UPPER_LEFT)
+		GLenum lastClipOrigin = 0;
+		glGetIntegerv(GL_CLIP_ORIGIN,
+					  reinterpret_cast<GLint*>(
+						  &lastClipOrigin)); // Support for GL 4.5's glClipControl(GL_UPPER_LEFT)
 		if (lastClipOrigin == GL_UPPER_LEFT)
 			clipOriginLowerLeft = false;
 #endif
 
 		// Setup desired GL state
-		// Recreate the VAO every time (this is to easily allow multiple GL contexts to be rendered to. VAO are not shared among GL contexts)
-		// The renderer would actually work without any VAO bound, but then our VertexAttrib calls would overwrite the default one currently bound.
+		// Recreate the VAO every time (this is to easily allow multiple GL contexts to be rendered
+		// to. VAO are not shared among GL contexts) The renderer would actually work without any
+		// VAO bound, but then our VertexAttrib calls would overwrite the default one currently
+		// bound.
 		GLuint vertexArrayObject = 0;
 #ifndef IMGUI_IMPL_OPENGL_ES2
 		glGenVertexArrays(1, &vertexArrayObject);
@@ -590,8 +703,9 @@ private:
 		SetupRenderState(drawData, fbWidth, fbHeight, vertexArrayObject);
 
 		// Will project scissor/clipping rectangles into framebuffer space
-		ImVec2 clipOff = drawData->DisplayPos;         // (0,0) unless using multi-viewports
-		ImVec2 clipScale = drawData->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
+		ImVec2 clipOff = drawData->DisplayPos; // (0,0) unless using multi-viewports
+		ImVec2 clipScale =
+			drawData->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
 
 		// Render command lists
 		for (int n = 0; n < drawData->CmdListsCount; n++)
@@ -599,8 +713,14 @@ private:
 			const ImDrawList* cmdList = drawData->CmdLists[n];
 
 			// Upload vertex/index buffers
-			glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(cmdList->VtxBuffer.Size) * sizeof(ImDrawVert), reinterpret_cast<const GLvoid*>(cmdList->VtxBuffer.Data), GL_STREAM_DRAW);
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr>(cmdList->IdxBuffer.Size) * sizeof(ImDrawIdx), reinterpret_cast<const GLvoid*>(cmdList->IdxBuffer.Data), GL_STREAM_DRAW);
+			glBufferData(GL_ARRAY_BUFFER,
+						 static_cast<GLsizeiptr>(cmdList->VtxBuffer.Size) * sizeof(ImDrawVert),
+						 reinterpret_cast<const GLvoid*>(cmdList->VtxBuffer.Data),
+						 GL_STREAM_DRAW);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+						 static_cast<GLsizeiptr>(cmdList->IdxBuffer.Size) * sizeof(ImDrawIdx),
+						 reinterpret_cast<const GLvoid*>(cmdList->IdxBuffer.Data),
+						 GL_STREAM_DRAW);
 
 			for (int cmdIdx = 0; cmdIdx < cmdList->CmdBuffer.Size; cmdIdx++)
 			{
@@ -608,7 +728,8 @@ private:
 				if (pcmd->UserCallback != NULL)
 				{
 					// User callback, registered via ImDrawList::AddCallback()
-					// (ImDrawCallback_ResetRenderState is a special callback value used by the user to request the renderer to reset render state.)
+					// (ImDrawCallback_ResetRenderState is a special callback value used by the user
+					// to request the renderer to reset render state.)
 					if (pcmd->UserCallback == ImDrawCallback_ResetRenderState)
 						SetupRenderState(drawData, fbWidth, fbHeight, vertexArrayObject);
 					else
@@ -623,22 +744,40 @@ private:
 					clipRect.z = (pcmd->ClipRect.z - clipOff.x) * clipScale.x;
 					clipRect.w = (pcmd->ClipRect.w - clipOff.y) * clipScale.y;
 
-					if (clipRect.x < fbWidth && clipRect.y < fbHeight && clipRect.z >= 0.0f && clipRect.w >= 0.0f)
+					if (clipRect.x < fbWidth && clipRect.y < fbHeight && clipRect.z >= 0.0f &&
+						clipRect.w >= 0.0f)
 					{
 						// Apply scissor/clipping rectangle
 						if (clipOriginLowerLeft)
-							glScissor(static_cast<GLint>(clipRect.x), static_cast<GLint>(fbHeight - clipRect.w),
-								static_cast<GLint>(clipRect.z - clipRect.x), static_cast<GLint>(clipRect.w - clipRect.y));
+							glScissor(static_cast<GLint>(clipRect.x),
+									  static_cast<GLint>(fbHeight - clipRect.w),
+									  static_cast<GLint>(clipRect.z - clipRect.x),
+									  static_cast<GLint>(clipRect.w - clipRect.y));
 						else
-							glScissor(static_cast<GLint>(clipRect.x), static_cast<GLint>(clipRect.y),
-								static_cast<GLint>(clipRect.z), static_cast<GLint>(clipRect.w)); // Support for GL 4.5 rarely used glClipControl(GL_UPPER_LEFT)
+							glScissor(
+								static_cast<GLint>(clipRect.x),
+								static_cast<GLint>(clipRect.y),
+								static_cast<GLint>(clipRect.z),
+								static_cast<GLint>(clipRect.w)); // Support for GL 4.5 rarely used
+																 // glClipControl(GL_UPPER_LEFT)
 
 						// Bind texture, Draw
-						glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(reinterpret_cast<intptr_t>(pcmd->TextureId)));
+						glBindTexture(
+							GL_TEXTURE_2D,
+							static_cast<GLuint>(reinterpret_cast<intptr_t>(pcmd->TextureId)));
 #if IMGUI_IMPL_OPENGL_HAS_DRAW_WITH_BASE_VERTEX
-						glDrawElementsBaseVertex(GL_TRIANGLES, static_cast<GLsizei>(pcmd->ElemCount), sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, reinterpret_cast<GLvoid*>(pcmd->IdxOffset * sizeof(ImDrawIdx)), static_cast<GLint>(pcmd->VtxOffset));
+						glDrawElementsBaseVertex(
+							GL_TRIANGLES,
+							static_cast<GLsizei>(pcmd->ElemCount),
+							sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT,
+							reinterpret_cast<GLvoid*>(pcmd->IdxOffset * sizeof(ImDrawIdx)),
+							static_cast<GLint>(pcmd->VtxOffset));
 #else
-						glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(pcmd->ElemCount), sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, reinterpret_cast<GLvoid*>(pcmd->IdxOffset * sizeof(ImDrawIdx)));
+						glDrawElements(
+							GL_TRIANGLES,
+							static_cast<GLsizei>(pcmd->ElemCount),
+							sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT,
+							reinterpret_cast<GLvoid*>(pcmd->IdxOffset * sizeof(ImDrawIdx)));
 #endif
 					}
 				}
@@ -663,15 +802,33 @@ private:
 		glBindBuffer(GL_ARRAY_BUFFER, lastArrayBuffer);
 		glBlendEquationSeparate(lastBlendEquationRgb, lastBlendEquationAlpha);
 		glBlendFuncSeparate(lastBlendSrcRgb, lastBlendDstRgb, lastBlendSrcAlpha, lastBlendDstAlpha);
-		if (lastEnableBlend) glEnable(GL_BLEND); else glDisable(GL_BLEND);
-		if (lastEnableCullFace) glEnable(GL_CULL_FACE); else glDisable(GL_CULL_FACE);
-		if (lastEnableDepthTest) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
-		if (lastEnableScissorTest) glEnable(GL_SCISSOR_TEST); else glDisable(GL_SCISSOR_TEST);
+		if (lastEnableBlend)
+			glEnable(GL_BLEND);
+		else
+			glDisable(GL_BLEND);
+		if (lastEnableCullFace)
+			glEnable(GL_CULL_FACE);
+		else
+			glDisable(GL_CULL_FACE);
+		if (lastEnableDepthTest)
+			glEnable(GL_DEPTH_TEST);
+		else
+			glDisable(GL_DEPTH_TEST);
+		if (lastEnableScissorTest)
+			glEnable(GL_SCISSOR_TEST);
+		else
+			glDisable(GL_SCISSOR_TEST);
 #ifdef GL_POLYGON_MODE
 		glPolygonMode(GL_FRONT_AND_BACK, static_cast<GLenum>(lastPolygonMode[0]));
 #endif
-		glViewport(lastViewport[0], lastViewport[1], static_cast<GLsizei>(lastViewport[2]), static_cast<GLsizei>(lastViewport[3]));
-		glScissor(lastScissorBox[0], lastScissorBox[1], static_cast<GLsizei>(lastScissorBox[2]), static_cast<GLsizei>(lastScissorBox[3]));
+		glViewport(lastViewport[0],
+				   lastViewport[1],
+				   static_cast<GLsizei>(lastViewport[2]),
+				   static_cast<GLsizei>(lastViewport[3]));
+		glScissor(lastScissorBox[0],
+				  lastScissorBox[1],
+				  static_cast<GLsizei>(lastScissorBox[2]),
+				  static_cast<GLsizei>(lastScissorBox[3]));
 	}
 
 	static const char* GetClipboardText(void*)
@@ -680,21 +837,14 @@ private:
 
 		clipboardData.reset(SDL_GetClipboardText());
 		return clipboardData.get();
-
 	}
 
-	static void SetClipboardText(void*, const char* text)
-	{
-		SDL_SetClipboardText(text);
-	}
+	static void SetClipboardText(void*, const char* text) { SDL_SetClipboardText(text); }
 
 	inline static std::array<SDL_Cursor*, ImGuiMouseCursor_COUNT> Cursors{};
 };
 
-CImGuiWindow::CImGuiWindow(const std::string& title)
-	: mImpl{ std::make_unique<Impl>(title) }
-{
-}
+CImGuiWindow::CImGuiWindow(const std::string& title) : mImpl{ std::make_unique<Impl>(title) } {}
 
 CImGuiWindow::~CImGuiWindow() = default;
 

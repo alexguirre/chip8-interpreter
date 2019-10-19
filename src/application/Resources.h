@@ -9,4 +9,3 @@ private:
 public:
 	static const std::array<std::uint32_t, 136544 / 4> FontAwesomeCompressedTTF;
 };
-
