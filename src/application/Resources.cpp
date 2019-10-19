@@ -1,5 +1,6 @@
 #include "Resources.h"
 
+// clang-format off
 const std::array<std::uint32_t, 136544 / 4> CResources::FontAwesomeCompressedTTF
 {
 	0x0000bc57, 0x00000000, 0xd8ef0200, 0x00000400, 0x00010037, 0x000d0000, 0x00030080, 0x54464650, 0x93c88c4d, 0xef0200dc, 0x281582bc, 0x4544471c,
@@ -2848,3 +2849,4 @@ const std::array<std::uint32_t, 136544 / 4> CResources::FontAwesomeCompressedTTF
 	0x6365720c, 0x8264726f, 0x796e23c9, 0x0083006c, 0xffff0126, 0x01000200, 0x0c200a82, 0x16200382, 0x0d830382, 0xc2030326, 0x04000200, 0x04820d84,
 	0x01200282, 0x00240382, 0xf9256bd9, 0xae2a0784, 0x0000efb6, 0xaed90000, 0xfa05f3b6, 0x7fff5fd7,
 };
+// clang-format on

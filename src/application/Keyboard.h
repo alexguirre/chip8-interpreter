@@ -1,8 +1,8 @@
 #pragma once
-#include <cstdint>
-#include <array>
 #include <SDL2/SDL.h>
+#include <array>
 #include <core/Context.h>
+#include <cstdint>
 
 class CKeyboard
 {

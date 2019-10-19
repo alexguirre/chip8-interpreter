@@ -1,12 +1,14 @@
 #pragma once
-#include <cstdint>
-#include <array>
 #include "Constants.h"
+#include <array>
+#include <cstdint>
 
 namespace c8
 {
 	using SKeyboardState = std::array<bool, constants::KeyboardKeyCount>;
-	using SDisplayPixelBuffer = std::array<std::uint8_t, (constants::schip::ExtendedDisplayResolutionWidth * constants::schip::ExtendedDisplayResolutionHeight)>;
+	using SDisplayPixelBuffer = std::array<std::uint8_t,
+										   (constants::schip::ExtendedDisplayResolutionWidth *
+											constants::schip::ExtendedDisplayResolutionHeight)>;
 
 	struct SDisplay
 	{
@@ -16,20 +18,28 @@ namespace c8
 		SDisplay();
 
 		void Reset();
-	
-		inline std::size_t Width() const { return ExtendedMode ? constants::schip::ExtendedDisplayResolutionWidth : constants::DisplayResolutionWidth; }
-		inline std::size_t Height() const { return ExtendedMode ? constants::schip::ExtendedDisplayResolutionHeight : constants::DisplayResolutionHeight; }
+
+		inline std::size_t Width() const
+		{
+			return ExtendedMode ? constants::schip::ExtendedDisplayResolutionWidth :
+								  constants::DisplayResolutionWidth;
+		}
+		inline std::size_t Height() const
+		{
+			return ExtendedMode ? constants::schip::ExtendedDisplayResolutionHeight :
+								  constants::DisplayResolutionHeight;
+		}
 	};
 
 	struct SContext
 	{
-		std::array<std::uint8_t, constants::NumberOfRegisters> V;	// General purpose registers
-		std::uint16_t I;	// The memory address register
-		std::uint16_t PC;	// The program counter
-		std::uint8_t SP;	// The stack pointer
-		std::uint8_t DT;	// The delay timer
-		std::uint8_t ST;	// The sound timer
-		std::uint16_t IR;	// The current instruction opcode
+		std::array<std::uint8_t, constants::NumberOfRegisters> V; // General purpose registers
+		std::uint16_t I;                                          // The memory address register
+		std::uint16_t PC;                                         // The program counter
+		std::uint8_t SP;                                          // The stack pointer
+		std::uint8_t DT;                                          // The delay timer
+		std::uint8_t ST;                                          // The sound timer
+		std::uint16_t IR;                                         // The current instruction opcode
 		std::array<std::uint16_t, constants::StackSize> Stack;
 		std::array<std::uint8_t, constants::MemorySize> Memory;
 		std::array<std::uint8_t, constants::schip::NumberOfRPLFlags> R; // RPL user flags

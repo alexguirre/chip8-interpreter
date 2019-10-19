@@ -87,3 +87,13 @@ jobs:
         run: |
           cd src/build/bin
           ./c8-core-test
+
+  check-formatting:
+    name: Check Code Formatting
+    runs-on: windows-2019
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Check
+        shell: pwsh
+        run: .\tools\codeformat.ps1 -Check

@@ -1,8 +1,8 @@
 #include "Interpreter.h"
 #include <algorithm>
 #include <fstream>
-#include <iterator>
 #include <iostream>
+#include <iterator>
 #include <random>
 #include <sstream>
 
@@ -17,10 +17,7 @@ namespace c8
 	{
 	}
 
-	void CInterpreter::Pause(bool pause)
-	{
-		mPaused = pause;
-	}
+	void CInterpreter::Pause(bool pause) { mPaused = pause; }
 
 	void CInterpreter::Update()
 	{
@@ -104,10 +101,7 @@ namespace c8
 		}
 	}
 
-	void CInterpreter::DoBeep()
-	{
-		mPlatform->Beep(BeepFrequency, BeepDuration);
-	}
+	void CInterpreter::DoBeep() { mPlatform->Beep(BeepFrequency, BeepDuration); }
 
 	void CInterpreter::LoadProgram(const std::filesystem::path& filePath)
 	{
@@ -119,11 +113,9 @@ namespace c8
 		mContext.Reset();
 
 		std::ifstream file(filePath, std::ios::in | std::ios::binary);
-		std::copy(
-			std::istreambuf_iterator(file),
-			std::istreambuf_iterator<char>(),
-			std::next(mContext.Memory.begin(), ProgramStartAddress)
-		);
+		std::copy(std::istreambuf_iterator(file),
+				  std::istreambuf_iterator<char>(),
+				  std::next(mContext.Memory.begin(), ProgramStartAddress));
 
 		mContext.PC = ProgramStartAddress;
 	}
@@ -146,11 +138,14 @@ namespace c8
 		file.read(&c.SP, sizeof(c.SP));
 		file.read(&c.DT, sizeof(c.DT));
 		file.read(&c.ST, sizeof(c.ST));
-		file.read(reinterpret_cast<std::uint8_t*>(c.Stack.data()), c.Stack.size() * sizeof(std::uint16_t));
+		file.read(reinterpret_cast<std::uint8_t*>(c.Stack.data()),
+				  c.Stack.size() * sizeof(std::uint16_t));
 		file.read(c.Memory.data(), c.Memory.size() * sizeof(std::uint8_t));
 		file.read(c.R.data(), c.R.size() * sizeof(std::uint8_t));
-		file.read(reinterpret_cast<std::uint8_t*>(&c.Display.ExtendedMode), sizeof(c.Display.ExtendedMode));
-		file.read(c.Display.PixelBuffer.data(), c.Display.PixelBuffer.size() * sizeof(std::uint8_t));
+		file.read(reinterpret_cast<std::uint8_t*>(&c.Display.ExtendedMode),
+				  sizeof(c.Display.ExtendedMode));
+		file.read(c.Display.PixelBuffer.data(),
+				  c.Display.PixelBuffer.size() * sizeof(std::uint8_t));
 		file.read(reinterpret_cast<std::uint8_t*>(&c.Exited), sizeof(c.Exited));
 
 		c.DisplayChanged = true;
@@ -160,13 +155,15 @@ namespace c8
 	{
 		if (!filePath.has_filename())
 		{
-			throw std::invalid_argument("Path '" + filePath.string() + "' is not a valid file path");
+			throw std::invalid_argument("Path '" + filePath.string() +
+										"' is not a valid file path");
 		}
 
 		fs::path fullPath = fs::absolute(filePath);
 		if (!fs::exists(fullPath.parent_path()))
 		{
-			throw std::invalid_argument("Parent path '" + fullPath.parent_path().string() + "' does not exist");
+			throw std::invalid_argument("Parent path '" + fullPath.parent_path().string() +
+										"' does not exist");
 		}
 
 		std::basic_ofstream<std::uint8_t> file(filePath, std::ios::out | std::ios::binary);
@@ -178,11 +175,14 @@ namespace c8
 		file.write(&c.SP, sizeof(c.SP));
 		file.write(&c.DT, sizeof(c.DT));
 		file.write(&c.ST, sizeof(c.ST));
-		file.write(reinterpret_cast<const std::uint8_t*>(c.Stack.data()), c.Stack.size() * sizeof(std::uint16_t));
+		file.write(reinterpret_cast<const std::uint8_t*>(c.Stack.data()),
+				   c.Stack.size() * sizeof(std::uint16_t));
 		file.write(c.Memory.data(), c.Memory.size() * sizeof(std::uint8_t));
 		file.write(c.R.data(), c.R.size() * sizeof(std::uint8_t));
-		file.write(reinterpret_cast<const std::uint8_t*>(&c.Display.ExtendedMode), sizeof(c.Display.ExtendedMode));
-		file.write(c.Display.PixelBuffer.data(), c.Display.PixelBuffer.size() * sizeof(std::uint8_t));
+		file.write(reinterpret_cast<const std::uint8_t*>(&c.Display.ExtendedMode),
+				   sizeof(c.Display.ExtendedMode));
+		file.write(c.Display.PixelBuffer.data(),
+				   c.Display.PixelBuffer.size() * sizeof(std::uint8_t));
 		file.write(reinterpret_cast<const std::uint8_t*>(&c.Exited), sizeof(c.Exited));
 	}
 
@@ -201,7 +201,8 @@ namespace c8
 		return inst.value();
 	}
 
-	std::optional<std::reference_wrapper<const SInstruction>> CInterpreter::TryFindInstruction(std::uint16_t opcode) const
+	std::optional<std::reference_wrapper<const SInstruction>>
+	CInterpreter::TryFindInstruction(std::uint16_t opcode) const
 	{
 		for (auto& inst : SInstruction::InstructionSet)
 		{

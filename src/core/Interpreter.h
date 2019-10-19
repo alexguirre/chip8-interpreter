@@ -1,14 +1,14 @@
 #pragma once
-#include <array>
-#include <cstdint>
-#include <filesystem>
-#include <chrono>
-#include <optional>
-#include <functional>
-#include "Instructions.h"
 #include "Constants.h"
 #include "Context.h"
+#include "Instructions.h"
 #include "Platform.h"
+#include <array>
+#include <chrono>
+#include <cstdint>
+#include <filesystem>
+#include <functional>
+#include <optional>
 
 namespace c8
 {
@@ -44,7 +44,8 @@ namespace c8
 		void LoadState(const std::filesystem::path& filePath);
 		void SaveState(const std::filesystem::path& filePath) const;
 		const SInstruction& FindInstruction(std::uint16_t opcode) const;
-		std::optional<std::reference_wrapper<const SInstruction>> TryFindInstruction(std::uint16_t opcode) const;
+		std::optional<std::reference_wrapper<const SInstruction>>
+		TryFindInstruction(std::uint16_t opcode) const;
 
 	private:
 		void DoCycle();

@@ -1,18 +1,25 @@
-#include <iostream>
-#include <vector>
-#include <thread>
-#include <optional>
-#include <tclap/CmdLine.h>
-#include <gsl/gsl_util>
-#include <core/Interpreter.h>
 #include "AppPlatform.h"
 #include "InterpreterDebugger.h"
+#include <core/Interpreter.h>
+#include <gsl/gsl_util>
+#include <iostream>
+#include <optional>
+#include <tclap/CmdLine.h>
+#include <thread>
+#include <vector>
 
 int main(int argc, char* argv[])
 {
 	TCLAP::CmdLine cmd("Chip-8 interpreter", ' ', "WIP");
-	TCLAP::UnlabeledValueArg<std::string> inputArg("input_file", "Specifies the filename of the program ROM.", true, "", "input_file");
-	TCLAP::SwitchArg debuggerArg("d", "debugger", "Specifies whether to open the debugger GUI.", false);
+	TCLAP::UnlabeledValueArg<std::string> inputArg("input_file",
+												   "Specifies the filename of the program ROM.",
+												   true,
+												   "",
+												   "input_file");
+	TCLAP::SwitchArg debuggerArg("d",
+								 "debugger",
+								 "Specifies whether to open the debugger GUI.",
+								 false);
 
 	cmd.add(inputArg);
 	cmd.add(debuggerArg);
@@ -40,16 +47,14 @@ int main(int argc, char* argv[])
 		bool quit = false;
 
 		// TODO: CInterpreter is not fully thread-safe
-		std::thread interpreterThread([&interpreter, &quit]()
+		std::thread interpreterThread([&interpreter, &quit]() {
+			while (!quit)
 			{
-				while (!quit)
-				{
-					std::this_thread::yield();
+				std::this_thread::yield();
 
-					interpreter.Update();
-				}
+				interpreter.Update();
 			}
-		);
+		});
 
 		while (!quit)
 		{
@@ -58,14 +63,15 @@ int main(int argc, char* argv[])
 			SDL_Event e;
 			while (SDL_PollEvent(&e))
 			{
-				if (e.type == SDL_QUIT || (e.type == SDL_WINDOWEVENT && e.window.event == SDL_WINDOWEVENT_CLOSE))
+				if (e.type == SDL_QUIT ||
+					(e.type == SDL_WINDOWEVENT && e.window.event == SDL_WINDOWEVENT_CLOSE))
 				{
 					quit = true;
 				}
 				else if (e.type == SDL_KEYDOWN && e.key.keysym.scancode == SDL_SCANCODE_F5)
 				{
-					// Pause because CInterpreter is not thread-safe so it could try modify the state
-					// while saving it. Not the ideal solution, could still cause issues.
+					// Pause because CInterpreter is not thread-safe so it could try modify the
+					// state while saving it. Not the ideal solution, could still cause issues.
 					interpreter.Pause(true);
 					interpreter.SaveState("save.ch8save");
 					interpreter.Pause(false);
@@ -73,7 +79,8 @@ int main(int argc, char* argv[])
 				else if (e.type == SDL_KEYDOWN && e.key.keysym.scancode == SDL_SCANCODE_F8)
 				{
 					// Pause because CInterpreter is not thread-safe so it could try to execute
-					// the program while loading the state. Not the ideal solution, could still cause issues.
+					// the program while loading the state. Not the ideal solution, could still
+					// cause issues.
 					interpreter.Pause(true);
 					interpreter.LoadState("save.ch8save");
 					interpreter.Pause(false);

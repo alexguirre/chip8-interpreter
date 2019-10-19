@@ -1,8 +1,8 @@
 #pragma once
-#include <core/Platform.h>
 #include "Display.h"
 #include "Keyboard.h"
 #include "Sound.h"
+#include <core/Platform.h>
 
 class CAppPlatform : public c8::IPlatform
 {
@@ -23,7 +23,7 @@ public:
 	inline CDisplay& Display() { return *mDisplay; }
 	inline CKeyboard& Keyboard() { return *mKeyboard; }
 	inline CSound& Sound() { return *mSound; }
-	
+
 	void GetKeyboardState(c8::SKeyboardState& dest) override;
 	void UpdateDisplay(const c8::SDisplay& display) override;
 	void Beep(double frequency, std::chrono::milliseconds duration) override;

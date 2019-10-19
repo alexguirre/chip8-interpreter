@@ -1,8 +1,8 @@
 #pragma once
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <vector>
-#include <functional>
 
 namespace c8
 {

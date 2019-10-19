@@ -1,7 +1,7 @@
 #pragma once
 #include "ImGuiWindow.h"
-#include <core/Interpreter.h>
 #include <array>
+#include <core/Interpreter.h>
 
 class CInterpreterDebugger : public CImGuiWindow
 {
