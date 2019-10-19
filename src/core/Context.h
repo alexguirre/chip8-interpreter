@@ -5,6 +5,7 @@
 
 namespace c8
 {
+	using SMemory = std::array<std::uint8_t, constants::MemorySize>;
 	using SKeyboardState = std::array<bool, constants::KeyboardKeyCount>;
 	using SDisplayPixelBuffer = std::array<std::uint8_t,
 										   (constants::schip::ExtendedDisplayResolutionWidth *
@@ -57,7 +58,7 @@ namespace c8
 		std::uint8_t ST;                                          // The sound timer
 		SOpCode IR;                                               // The current instruction opcode
 		std::array<std::uint16_t, constants::StackSize> Stack;
-		std::array<std::uint8_t, constants::MemorySize> Memory;
+		SMemory Memory;
 		std::array<std::uint8_t, constants::schip::NumberOfRPLFlags> R; // RPL user flags
 		SDisplay Display;
 		bool DisplayChanged;

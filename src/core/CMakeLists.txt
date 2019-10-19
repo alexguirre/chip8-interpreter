@@ -4,6 +4,8 @@ set(CORE_SOURCES
     "Constants.h"
     "Context.cpp"
     "Context.h"
+	"Disassembler.cpp"
+	"Disassembler.h"
     "Instructions.cpp"
     "Instructions.h"
     "Interpreter.cpp"
