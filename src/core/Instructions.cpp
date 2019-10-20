@@ -597,9 +597,8 @@ TEST_CASE("Instruction ToString")
 					[](SContext&) {},
 					0x0000,
 					0x0000,
-					[](const SInstruction&, SOpCode) {
-						return std::string{};
-					} };
+					[](const SInstruction&, SOpCode) { return std::string{}; },
+					EInstructionKind::Other };
 	SOpCode c{};
 
 	SUBCASE("NAME") { CHECK(ToString_NAME(i, c) == "A"); }
