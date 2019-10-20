@@ -16,6 +16,7 @@ namespace c8
 
 	void CDisassembler::Disassemble(std::size_t addr, const SMemory& mem, SDisassembly& dest) const
 	{
+		// if the address was already disassembled, return
 		if (std::any_of(dest.begin(), dest.end(), [addr](auto l) { return l.Address == addr; }))
 		{
 			return;
@@ -50,7 +51,17 @@ namespace c8
 			}
 			case EInstructionKind::Branch:
 			{
-				// TODO: explore the branch alternative path
+				if (inst.Name == "CALL")
+				{
+					// explore the call destination address
+					Disassemble(opcode.NNN(), mem, dest);
+				}
+				else if (inst.Name == "SE" || inst.Name == "SNE" || inst.Name == "SKP" ||
+						 inst.Name == "SKNP")
+				{
+					// skip one instruction and explore the following one
+					Disassemble(addr + constants::InstructionByteSize * 2, mem, dest);
+				}
 
 				break;
 			}
