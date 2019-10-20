@@ -16,10 +16,11 @@ namespace c8
 
 	enum class EInstructionKind
 	{
-		Other = 0,
-		Branch = 1,
-		Return = 2,
-		Exit = 3,
+		Other = 0,  // An instruction that does not belong to any of the other kinds
+		Jump = 1,   // An unconditional jump instruction
+		Branch = 2, // A conditional jump instruction
+		Return = 3, // The RET instruction
+		Exit = 4,   // The EXIT instruction
 	};
 
 	struct SInstruction

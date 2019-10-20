@@ -28,14 +28,39 @@ namespace c8
 			const SInstruction& inst = instOpt.value().get();
 			dest.emplace_back(addr, opcode, inst.ToString(inst, opcode));
 
-			if (inst.Kind == EInstructionKind::Branch)
+			switch (inst.Kind)
+			{
+			case EInstructionKind::Other: break; // nothing to do
+			case EInstructionKind::Jump:
+			{
+				if (inst.Opcode == 0x1000) // if it is `JP nnn`
+				{
+					// explore the destination address
+					Disassemble(opcode.NNN(), mem, dest);
+				}
+				else if (inst.Opcode == 0xB000) // if it is `JP V0, nnn`
+				{
+					// with `JP V0, nnn`, it is not really possible to know the destination address
+					// since it depends on the runtime value of `V0`, so for now we don't explore
+					// the jump
+				}
+
+				// the jump is always perform, so we reached the end of this branch
+				return;
+			}
+			case EInstructionKind::Branch:
 			{
 				// TODO: explore the branch alternative path
+
+				break;
 			}
-			else if (inst.Kind == EInstructionKind::Return || inst.Kind == EInstructionKind::Exit)
+			case EInstructionKind::Return:
+			case EInstructionKind::Exit:
 			{
 				// if we are at a RET or an EXIT, we reached the end of this branch
 				return;
+			}
+			default: throw std ::runtime_error("Invalid instruction kind");
 			}
 
 			// move to next instruction

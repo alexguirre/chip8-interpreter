@@ -516,7 +516,7 @@ namespace c8
 	{
 		{ "CLS",	Handler_CLS,			0x00E0,	0xF0FF,	ToString_NAME,									EInstructionKind::Other		},
 		{ "RET",	Handler_RET,			0x00EE,	0xF0FF,	ToString_NAME,									EInstructionKind::Return	},
-		{ "JP",		Handler_JP_nnn,			0x1000,	0xF000,	ToString_NAME_nnn,								EInstructionKind::Branch	},
+		{ "JP",		Handler_JP_nnn,			0x1000,	0xF000,	ToString_NAME_nnn,								EInstructionKind::Jump		},
 		{ "CALL",	Handler_CALL_nnn,		0x2000,	0xF000,	ToString_NAME_nnn,								EInstructionKind::Branch	},
 		{ "SE",		Handler_SE_Vx_kk,		0x3000,	0xF000,	ToString_NAME_Vx_kk,							EInstructionKind::Branch	},
 		{ "SNE",	Handler_SNE_Vx_kk,		0x4000,	0xF000,	ToString_NAME_Vx_kk,							EInstructionKind::Branch	},
@@ -534,7 +534,7 @@ namespace c8
 		{ "SHL",	Handler_SHL_Vx,			0x800E,	0xF00F,	ToString_NAME_Vx,								EInstructionKind::Other		},
 		{ "SNE",	Handler_SNE_Vx_Vy,		0x9000,	0xF00F,	ToString_NAME_Vx_Vy,							EInstructionKind::Branch	},
 		{ "LD",		Handler_LD_I_nnn,		0xA000,	0xF000,	std::bind(ToString_NAME_dst_nnn, _1, _2, "I"),	EInstructionKind::Other		},
-		{ "JP",		Handler_JP_V0_nnn,		0xB000,	0xF000,	std::bind(ToString_NAME_dst_nnn, _1, _2, "V0"),	EInstructionKind::Branch	},
+		{ "JP",		Handler_JP_V0_nnn,		0xB000,	0xF000,	std::bind(ToString_NAME_dst_nnn, _1, _2, "V0"),	EInstructionKind::Jump		},
 		{ "RND",	Handler_RND_Vx_kk,		0xC000,	0xF000,	ToString_NAME_Vx_kk,							EInstructionKind::Other		},
 		{ "DRW",	Handler_DRW_Vx_Vy_n,	0xD000,	0xF000,	ToString_NAME_Vx_Vy_n,							EInstructionKind::Other		},
 		{ "SKP",	Handler_SKP_Vx,			0xE09E,	0xF0FF,	ToString_NAME_Vx,								EInstructionKind::Branch	},
