@@ -124,7 +124,7 @@ void CInterpreterDebugger::DrawRegisters()
 		ImGui::NextColumn();
 		ImGui::Text("SP:   %02X", c.SP);
 		ImGui::NextColumn();
-		ImGui::Text("IR: %04X", c.IR);
+		ImGui::Text("IR: %04X", c.IR.Value);
 		ImGui::NextColumn();
 		ImGui::Text("DT:   %02X", c.DT);
 		ImGui::NextColumn();
