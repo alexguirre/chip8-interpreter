@@ -19,7 +19,7 @@ void PrintDisassembly(const c8::CInterpreter& interpreter)
 	for (auto& l : disassembly)
 	{
 		std::cout << std::uppercase << std::hex << std::setfill('0') << std::setw(4) << l.Address
-				  << '\t' << l.OpCode << '\t' << l.Source << '\n';
+				  << '\t' << std::setw(4) << l.OpCode << '\t' << l.Source << '\n';
 	}
 }
 
