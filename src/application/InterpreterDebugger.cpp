@@ -323,18 +323,23 @@ void CInterpreterDebugger::DrawDisassembly()
 			// constexpr std::size_t BytesPerLine{ InstructionByteSize };
 			// constexpr std::size_t LineTotalCount{ MemorySize / BytesPerLine };
 
-			// handle 'go to address' request
-			// if (mDisassemblyGoToAddress != InvalidDisassemblyGoToAddress)
-			//{
-			//	const std::size_t lineIndex = mDisassemblyGoToAddress / BytesPerLine;
-			//	const float offsetY = lineIndex * ImGui::GetTextLineHeightWithSpacing();
-			//	ImGui::SetScrollY(offsetY);
-			//	mDisassemblyGoToAddress = InvalidDisassemblyGoToAddress;
-			//}
-
 			// TODO: can we only disassemble when memory is changed?
 			SDisassembly disassembly =
 				CDisassembler().Disassemble(ProgramStartAddress, mInterpreter.Context().Memory);
+
+			// handle 'go to address' request
+			if (mDisassemblyGoToAddress != InvalidDisassemblyGoToAddress)
+			{
+				// get the disassembly line closest to the target address
+				const auto line =
+					std::find_if(disassembly.begin(), disassembly.end(), [this](auto l) {
+						return l.Address >= mDisassemblyGoToAddress;
+					});
+				const std::size_t lineIndex = std::distance(disassembly.begin(), line);
+				const float offsetY = lineIndex * ImGui::GetTextLineHeightWithSpacing();
+				ImGui::SetScrollY(offsetY);
+				mDisassemblyGoToAddress = InvalidDisassemblyGoToAddress;
+			}
 
 			ImGuiListClipper clipper(gsl::narrow<int>(disassembly.size()));
 			while (clipper.Step())
