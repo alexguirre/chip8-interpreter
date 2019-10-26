@@ -1,9 +1,9 @@
 #include "InterpreterDebugger.h"
 #include "Icons.h"
+#include <algorithm>
 #include <core/Disassembler.h>
 #include <gsl/gsl_util>
 #include <imgui.h>
-#include <mutex>
 
 static const ImVec4 SubtitleColor{ 0.1f, 0.8f, 0.05f, 1.0f };
 
@@ -19,6 +19,28 @@ CInterpreterDebugger::CInterpreterDebugger(CInterpreter& interpreter)
 	  mBreakpoints{},
 	  mDisassemblyGoToAddress{ InvalidDisassemblyGoToAddress }
 {
+}
+
+bool CInterpreterDebugger::IsBreakpointSet(std::uint16_t address) const
+{
+	return std::any_of(mBreakpoints.begin(), mBreakpoints.end(), [address](std::uint16_t bp) {
+		return bp == address;
+	});
+}
+
+void CInterpreterDebugger::SetBreakpoint(std::uint16_t address, bool enable)
+{
+	bool isSet = IsBreakpointSet(address);
+
+	if (enable && !isSet) // add breakpoint
+	{
+		mBreakpoints.push_back(address);
+	}
+	else if (!enable && isSet) // remove breakpoint
+	{
+		auto removed = std::remove(mBreakpoints.begin(), mBreakpoints.end(), address);
+		mBreakpoints.erase(removed, mBreakpoints.end());
+	}
 }
 
 void CInterpreterDebugger::Draw()
@@ -322,30 +344,31 @@ void CInterpreterDebugger::DrawDisassembly()
 					ImGui::PushID(i);
 
 					const SDisassemblyLine& line = disassembly[i];
-					const std::size_t addr = line.Address;
+					const std::uint16_t addr = gsl::narrow_cast<std::uint16_t>(line.Address);
 
 					// highlight background if the breakpoint is set
-					// if (mBreakpoints[i])
-					//{
-					//	// text background
-					//	ImVec2 pos = ImGui::GetCursorScreenPos();
-					//	ImGui::GetWindowDrawList()->AddRectFilled(
-					//		ImVec2(pos.x + LeftGapWidth, pos.y),
-					//		ImVec2(std::numeric_limits<float>::max(),
-					//			   pos.y + ImGui::GetTextLineHeight()),
-					//		IM_COL32(200, 0, 0, 100));
+					const bool isBreakpointSet = IsBreakpointSet(addr);
+					if (isBreakpointSet)
+					{
+						// text background
+						ImVec2 pos = ImGui::GetCursorScreenPos();
+						ImGui::GetWindowDrawList()->AddRectFilled(
+							ImVec2(pos.x + LeftGapWidth, pos.y),
+							ImVec2(std::numeric_limits<float>::max(),
+								   pos.y + ImGui::GetTextLineHeight()),
+							IM_COL32(200, 0, 0, 100));
 
-					//	// circle icon
-					//	const ImVec2 circleCenter{ pos.x + (LeftGapWidth * 0.5f),
-					//							   pos.y + ImGui::GetTextLineHeight() * 0.5f };
-					//	const float circleRadius = ImGui::GetTextLineHeight() * 0.5f;
-					//	ImGui::GetWindowDrawList()->AddCircleFilled(circleCenter,
-					//												circleRadius,
-					//												IM_COL32(240, 0, 0, 255));
-					//	ImGui::GetWindowDrawList()->AddCircle(circleCenter,
-					//										  circleRadius,
-					//										  IM_COL32(255, 255, 255, 255));
-					//}
+						// circle icon
+						const ImVec2 circleCenter{ pos.x + (LeftGapWidth * 0.5f),
+												   pos.y + ImGui::GetTextLineHeight() * 0.5f };
+						const float circleRadius = ImGui::GetTextLineHeight() * 0.5f;
+						ImGui::GetWindowDrawList()->AddCircleFilled(circleCenter,
+																	circleRadius,
+																	IM_COL32(240, 0, 0, 255));
+						ImGui::GetWindowDrawList()->AddCircle(circleCenter,
+															  circleRadius,
+															  IM_COL32(255, 255, 255, 255));
+					}
 
 					// executing instruction indicator
 					if (c.PC == addr)
@@ -361,11 +384,11 @@ void CInterpreterDebugger::DrawDisassembly()
 					if (ImGui::InvisibleButton("##breakpointButton",
 											   ImVec2(LeftGapWidth, ImGui::GetTextLineHeight())))
 					{
-						// mBreakpoints[i] = !mBreakpoints[i];
+						SetBreakpoint(addr, !isBreakpointSet);
 					}
 					ImGui::SameLine();
 
-					ImGui::Text("%04X: ", gsl::narrow<std::uint32_t>(addr));
+					ImGui::Text("%04X: ", addr);
 					ImGui::SameLine();
 					ImGui::Text("%s", line.Source.c_str());
 
@@ -385,8 +408,9 @@ void CInterpreterDebugger::CheckBreakpoints()
 		return;
 	}
 
-	const std::size_t breakpointIndex = mInterpreter.Context().PC / 2;
-	if (mBreakpoints[breakpointIndex])
+	// TODO: sometimes a breakpoint is skipped, probably because CInterpreter runs in a different
+	// thread than CInterpreterDebugger
+	if (IsBreakpointSet(mInterpreter.Context().PC))
 	{
 		mInterpreter.Pause(true);
 	}

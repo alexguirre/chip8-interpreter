@@ -1,6 +1,6 @@
 #pragma once
 #include "ImGuiWindow.h"
-#include <array>
+#include <vector>
 #include <core/Interpreter.h>
 
 class CInterpreterDebugger : public CImGuiWindow
@@ -10,11 +10,14 @@ private:
 
 	c8::CInterpreter& mInterpreter;
 	bool mFirstDraw;
-	std::array<bool, (c8::constants::MemorySize / c8::constants::InstructionByteSize)> mBreakpoints;
+	std::vector<std::uint16_t> mBreakpoints;
 	std::size_t mDisassemblyGoToAddress;
 
 public:
 	CInterpreterDebugger(c8::CInterpreter& interpreter);
+
+	bool IsBreakpointSet(std::uint16_t address) const;
+	void SetBreakpoint(std::uint16_t address, bool enable);
 
 	void Draw() override;
 
