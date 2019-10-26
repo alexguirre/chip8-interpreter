@@ -1,7 +1,7 @@
 #pragma once
 #include "ImGuiWindow.h"
-#include <vector>
 #include <core/Interpreter.h>
+#include <vector>
 
 class CInterpreterDebugger : public CImGuiWindow
 {
