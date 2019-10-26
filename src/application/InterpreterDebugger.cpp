@@ -1,5 +1,6 @@
 #include "InterpreterDebugger.h"
 #include "Icons.h"
+#include <core/Disassembler.h>
 #include <gsl/gsl_util>
 #include <imgui.h>
 #include <mutex>
@@ -297,49 +298,54 @@ void CInterpreterDebugger::DrawDisassembly()
 					IM_COL32(50, 50, 50, 180));
 			}
 
-			constexpr std::size_t BytesPerLine{ InstructionByteSize };
-			constexpr std::size_t LineTotalCount{ MemorySize / BytesPerLine };
+			// constexpr std::size_t BytesPerLine{ InstructionByteSize };
+			// constexpr std::size_t LineTotalCount{ MemorySize / BytesPerLine };
 
 			// handle 'go to address' request
-			if (mDisassemblyGoToAddress != InvalidDisassemblyGoToAddress)
-			{
-				const std::size_t lineIndex = mDisassemblyGoToAddress / BytesPerLine;
-				const float offsetY = lineIndex * ImGui::GetTextLineHeightWithSpacing();
-				ImGui::SetScrollY(offsetY);
-				mDisassemblyGoToAddress = InvalidDisassemblyGoToAddress;
-			}
+			// if (mDisassemblyGoToAddress != InvalidDisassemblyGoToAddress)
+			//{
+			//	const std::size_t lineIndex = mDisassemblyGoToAddress / BytesPerLine;
+			//	const float offsetY = lineIndex * ImGui::GetTextLineHeightWithSpacing();
+			//	ImGui::SetScrollY(offsetY);
+			//	mDisassemblyGoToAddress = InvalidDisassemblyGoToAddress;
+			//}
 
-			ImGuiListClipper clipper(gsl::narrow<int>(LineTotalCount));
+			// TODO: can we only disassemble when memory is changed?
+			SDisassembly disassembly =
+				CDisassembler().Disassemble(ProgramStartAddress, mInterpreter.Context().Memory);
+
+			ImGuiListClipper clipper(gsl::narrow<int>(disassembly.size()));
 			while (clipper.Step())
 			{
 				for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
 				{
-					ImGui::PushID(static_cast<int>(i));
+					ImGui::PushID(i);
 
-					const std::size_t addr = i * BytesPerLine;
+					const SDisassemblyLine& line = disassembly[i];
+					const std::size_t addr = line.Address;
 
 					// highlight background if the breakpoint is set
-					if (mBreakpoints[i])
-					{
-						// text background
-						ImVec2 pos = ImGui::GetCursorScreenPos();
-						ImGui::GetWindowDrawList()->AddRectFilled(
-							ImVec2(pos.x + LeftGapWidth, pos.y),
-							ImVec2(std::numeric_limits<float>::max(),
-								   pos.y + ImGui::GetTextLineHeight()),
-							IM_COL32(200, 0, 0, 100));
+					// if (mBreakpoints[i])
+					//{
+					//	// text background
+					//	ImVec2 pos = ImGui::GetCursorScreenPos();
+					//	ImGui::GetWindowDrawList()->AddRectFilled(
+					//		ImVec2(pos.x + LeftGapWidth, pos.y),
+					//		ImVec2(std::numeric_limits<float>::max(),
+					//			   pos.y + ImGui::GetTextLineHeight()),
+					//		IM_COL32(200, 0, 0, 100));
 
-						// circle icon
-						const ImVec2 circleCenter{ pos.x + (LeftGapWidth * 0.5f),
-												   pos.y + ImGui::GetTextLineHeight() * 0.5f };
-						const float circleRadius = ImGui::GetTextLineHeight() * 0.5f;
-						ImGui::GetWindowDrawList()->AddCircleFilled(circleCenter,
-																	circleRadius,
-																	IM_COL32(240, 0, 0, 255));
-						ImGui::GetWindowDrawList()->AddCircle(circleCenter,
-															  circleRadius,
-															  IM_COL32(255, 255, 255, 255));
-					}
+					//	// circle icon
+					//	const ImVec2 circleCenter{ pos.x + (LeftGapWidth * 0.5f),
+					//							   pos.y + ImGui::GetTextLineHeight() * 0.5f };
+					//	const float circleRadius = ImGui::GetTextLineHeight() * 0.5f;
+					//	ImGui::GetWindowDrawList()->AddCircleFilled(circleCenter,
+					//												circleRadius,
+					//												IM_COL32(240, 0, 0, 255));
+					//	ImGui::GetWindowDrawList()->AddCircle(circleCenter,
+					//										  circleRadius,
+					//										  IM_COL32(255, 255, 255, 255));
+					//}
 
 					// executing instruction indicator
 					if (c.PC == addr)
@@ -355,33 +361,13 @@ void CInterpreterDebugger::DrawDisassembly()
 					if (ImGui::InvisibleButton("##breakpointButton",
 											   ImVec2(LeftGapWidth, ImGui::GetTextLineHeight())))
 					{
-						mBreakpoints[i] = !mBreakpoints[i];
+						// mBreakpoints[i] = !mBreakpoints[i];
 					}
 					ImGui::SameLine();
 
-					if (addr >= ProgramStartAddress)
-					{
-						ImGui::Text("%04X: ", gsl::narrow<std::uint32_t>(addr));
-					}
-					else
-					{
-						ImGui::TextDisabled("%04X: ", gsl::narrow<std::uint32_t>(addr));
-					}
+					ImGui::Text("%04X: ", gsl::narrow<std::uint32_t>(addr));
 					ImGui::SameLine();
-
-					SOpCode opcode = c.Memory[addr] << 8 | c.Memory[addr + 1];
-
-					auto instOpt = SInstruction::TryFindInstruction(opcode);
-					if (instOpt.has_value())
-					{
-						const SInstruction& inst = instOpt.value().get();
-						std::string instStr = inst.ToString(inst, opcode);
-						ImGui::Text("%s", instStr.c_str());
-					}
-					else
-					{
-						ImGui::TextDisabled("???");
-					}
+					ImGui::Text("%s", line.Source.c_str());
 
 					ImGui::PopID();
 				}
